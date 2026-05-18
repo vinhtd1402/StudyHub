@@ -35,5 +35,13 @@
                 </a>
             }
         </div>
+        @if (User.Identity!.IsAuthenticated)
+        {
+            <form method="post" asp-page-handler="Complete" asp-route-id="@Model.Lesson.Id">
+                <button type="submit" class="btn btn-success">
+                    Mark as Completed
+                </button>
+            </form>
+        }
     </div>
 </div>
