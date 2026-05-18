@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
 
-namespace StudyHub.Pages.Courses
+namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Student")]
     public class MyCoursesModel : PageModel
@@ -21,7 +21,7 @@ namespace StudyHub.Pages.Courses
             _userManager = userManager;
         }
 
-        public List<Course> Courses { get; set; } = new();
+        public IList<Course> Courses { get; set; } = new List<Course>();
 
         public async Task OnGetAsync()
         {
@@ -32,6 +32,7 @@ namespace StudyHub.Pages.Courses
             Courses = await _context.Enrollments
                 .Where(e => e.StudentId == user.Id)
                 .Include(e => e.Course)
+                .ThenInclude(c => c.Teacher)
                 .Select(e => e.Course)
                 .ToListAsync();
         }
