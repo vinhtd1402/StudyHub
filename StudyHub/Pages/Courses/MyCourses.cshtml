@@ -1,0 +1,26 @@
+﻿@page
+@model StudyHub.Pages.Courses.MyCoursesModel
+
+@{
+    ViewData["Title"] = "My Courses";
+}
+
+<h1>My Courses</h1>
+
+@if (Model.Courses.Count == 0)
+{
+    <p>You have not enrolled in any courses yet.</p>
+}
+else
+{
+    <ul class="list-group">
+        @foreach (var course in Model.Courses)
+        {
+            <li class="list-group-item">
+                <a asp-page="/Courses/Details" asp-route-id="@course.Id">
+                    @course.Title
+                </a>
+            </li>
+        }
+    </ul>
+}
