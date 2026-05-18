@@ -12,6 +12,8 @@ namespace StudyHub.Pages_Courses
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        public Dictionary<int, int> CompletedLessonsCount { get; set; } = new();
+        public Dictionary<int, int> TotalLessonsCount { get; set; } = new();
 
         public MyCoursesModel(
             ApplicationDbContext context,
@@ -35,6 +37,17 @@ namespace StudyHub.Pages_Courses
                 .ThenInclude(c => c.Teacher)
                 .Select(e => e.Course)
                 .ToListAsync();
+            foreach (var course in Courses)
+            {
+                TotalLessonsCount[course.Id] = await _context.Lessons
+                    .CountAsync(l => l.CourseId == course.Id);
+
+                CompletedLessonsCount[course.Id] = await _context.LessonProgresses
+                    .CountAsync(lp =>
+                        lp.StudentId == user.Id &&
+                        lp.IsCompleted &&
+                        lp.Lesson.CourseId == course.Id);
+            }
         }
     }
 }

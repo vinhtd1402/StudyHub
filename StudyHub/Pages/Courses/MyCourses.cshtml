@@ -12,6 +12,10 @@
     <div class="list-group">
         @foreach (var course in Model.Courses)
         {
+            var total = Model.TotalLessonsCount[course.Id];
+            var completed = Model.CompletedLessonsCount[course.Id];
+            var percent = total == 0 ? 0 : completed * 100 / total;
+
             <a asp-page="/Courses/Details"
                    asp-route-id="@course.Id"
                    class="list-group-item list-group-item-action">
@@ -19,6 +23,21 @@
                 <h5>@course.Title</h5>
                 <p>@course.Description</p>
                 <small>Teacher: @course.Teacher.Email</small>
+
+                <div class="mt-2">
+                    <small class="text-success">
+                        Progress: @completed / @total lessons completed
+                    </small>
+                </div>
+
+                <div class="progress mt-2">
+                    <div class="progress-bar"
+                         role="progressbar"
+                         style="width:@percent%">
+                        @percent%
+                    </div>
+                </div>
+
             </a>
         }
     </div>
