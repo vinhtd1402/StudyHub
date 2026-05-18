@@ -33,7 +33,9 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
-            var course = await _context.Courses.FirstOrDefaultAsync(m => m.Id == id);
+            var course = await _context.Courses
+    .Include(c => c.Lessons)
+    .FirstOrDefaultAsync(m => m.Id == id);
 
             if (course is not null)
             {

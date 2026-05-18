@@ -33,6 +33,25 @@
         </dd>
     </dl>
 </div>
+<h4>Lessons</h4>
+
+@if (Model.Course.Lessons.Any())
+{
+    <ul class="list-group">
+        @foreach (var lesson in Model.Course.Lessons)
+        {
+            <li class="list-group-item">
+                <a asp-page="/Lessons/Details" asp-route-id="@lesson.Id">
+                    @lesson.Title
+                </a>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No lessons available.</p>
+}
 
 @if (User.Identity!.IsAuthenticated)
 {

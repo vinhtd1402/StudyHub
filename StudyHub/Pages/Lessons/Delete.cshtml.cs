@@ -7,9 +7,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
-
+using Microsoft.AspNetCore.Authorization;
 namespace StudyHub.Pages_Lessons
 {
+    [Authorize(Roles = "Teacher")]
     public class DeleteModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;

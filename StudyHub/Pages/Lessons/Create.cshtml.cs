@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using StudyHub.Data;
 using StudyHub.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudyHub.Pages_Lessons
 {
+    [Authorize(Roles = "Teacher")]
     public class CreateModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
