@@ -7,7 +7,7 @@ namespace StudyHub
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -19,11 +19,13 @@ namespace StudyHub
 
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = false;
             })
-.AddEntityFrameworkStores<ApplicationDbContext>();
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultUI()
+.AddDefaultTokenProviders();
 
             builder.Services.AddRazorPages();
 
@@ -48,8 +50,31 @@ namespace StudyHub
             app.MapStaticAssets();
             app.MapRazorPages()
                .WithStaticAssets();
+            using (var scope = app.Services.CreateScope())
+            {
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            app.Run();
+                string[] roles = { "Admin", "Teacher", "Student" };
+
+                foreach (var role in roles)
+                {
+                    if (!await roleManager.RoleExistsAsync(role))
+                    {
+                        await roleManager.CreateAsync(new IdentityRole(role));
+                    }
+                }
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+                var email = "vinh@gmail.com";
+
+                var user = await userManager.FindByEmailAsync(email);
+
+                if (user != null && !await userManager.IsInRoleAsync(user, "Teacher"))
+                {
+                    await userManager.AddToRoleAsync(user, "Teacher");
+                }
+            }
+            await app.RunAsync();
         }
     }
 }
