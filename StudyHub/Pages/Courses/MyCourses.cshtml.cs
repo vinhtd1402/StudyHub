@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
@@ -48,6 +49,40 @@ namespace StudyHub.Pages_Courses
                         lp.IsCompleted &&
                         lp.Lesson.CourseId == course.Id);
             }
+        }
+        public async Task<IActionResult> OnGetContinueAsync(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null) return Challenge();
+
+            var lessons = await _context.Lessons
+                .Where(l => l.CourseId == id)
+                .OrderBy(l => l.Id)
+                .ToListAsync();
+
+            foreach (var lesson in lessons)
+            {
+                var completed = await _context.LessonProgresses.AnyAsync(lp =>
+                    lp.StudentId == user.Id &&
+                    lp.LessonId == lesson.Id &&
+                    lp.IsCompleted);
+
+                if (!completed)
+                {
+                    return RedirectToPage("/Lessons/Details", new { id = lesson.Id });
+                }
+            }
+
+            // all completed -> open first lesson
+            var firstLesson = lessons.FirstOrDefault();
+
+            if (firstLesson != null)
+            {
+                return RedirectToPage("/Lessons/Details", new { id = firstLesson.Id });
+            }
+
+            return RedirectToPage();
         }
     }
 }
