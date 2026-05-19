@@ -1,0 +1,19 @@
+﻿@page
+@model StudyHub.Pages.Quizzes.CreateModel
+<form method="post">
+
+    <div class="mb-3">
+        <label>Quiz Title</label>
+        <input asp-for="Quiz.Title" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Lesson Id</label>
+        <input asp-for="Quiz.LessonId" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Create Quiz
+    </button>
+
+</form>

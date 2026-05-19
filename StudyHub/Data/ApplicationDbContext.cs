@@ -10,6 +10,11 @@ namespace StudyHub.Data
             : base(options)
         {
         }
+        public DbSet<Quiz> Quizzes { get; set; }
+
+        public DbSet<Question> Questions { get; set; }
+
+        public DbSet<Answer> Answers { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
         public DbSet<Enrollment> Enrollments { get; set; }
