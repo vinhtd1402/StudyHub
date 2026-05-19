@@ -84,5 +84,6 @@ namespace StudyHub.Pages_Courses
 
             return RedirectToPage();
         }
+
     }
 }
