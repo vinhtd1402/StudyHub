@@ -1,0 +1,56 @@
+﻿@page
+@model StudyHub.Pages.Quizzes.HistoryModel
+
+<h2>Quiz History</h2>
+
+@if (!Model.History.Any())
+{
+    <p>You haven't taken any quizzes yet.</p>
+}
+else
+{
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Quiz</th>
+                <th>Score</th>
+                <th>Total</th>
+                <th>Percent</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var item in Model.History)
+            {
+                var percent = item.TotalQuestions == 0
+                    ? 0
+                    : (item.Score * 100 / item.TotalQuestions);
+
+                <tr>
+                    <td>@item.Quiz.Title</td>
+                    <td>@item.Score</td>
+                    <td>@item.TotalQuestions</td>
+
+                    <td>
+                        @if (percent >= 80)
+                        {
+                            <span style="color:green">@percent%</span>
+                        }
+                        else if (percent >= 50)
+                        {
+                            <span style="color:orange">@percent%</span>
+                        }
+                        else
+                        {
+                            <span style="color:red">@percent%</span>
+                        }
+                    </td>
+
+                    <td>@item.TakenAt.ToString("dd/MM/yyyy HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}

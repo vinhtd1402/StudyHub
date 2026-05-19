@@ -1,0 +1,34 @@
+﻿@page
+@model StudyHub.Pages.Quizzes.TakeModel
+
+<h2>@Model.Quiz.Title</h2>
+
+@if (ViewData["Score"] != null)
+{
+    <div style="padding:10px; background:lightgreen;">
+        <h3>
+            Result: @ViewData["Score"] / @ViewData["Total"]
+        </h3>
+    </div>
+}
+
+<form method="post">
+    @foreach (var q in Model.Quiz.Questions)
+    {
+        <div style="margin-bottom:20px;">
+            <h4>@q.Content</h4>
+
+            @foreach (var a in q.Answers)
+            {
+                <div>
+                    <input type="radio"
+                           name="UserAnswers[@q.Id]"
+                           value="@a.Id" />
+                    @a.Content
+                </div>
+            }
+        </div>
+    }
+
+    <button type="submit">Submit Quiz</button>
+</form>
