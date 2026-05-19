@@ -12,7 +12,7 @@ namespace StudyHub
             var builder = WebApplication.CreateBuilder(args);
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                ?? throw new InvalidOperationException("Connection string not found.");
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
@@ -23,9 +23,9 @@ namespace StudyHub
             {
                 options.SignIn.RequireConfirmedAccount = false;
             })
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultUI()
-.AddDefaultTokenProviders();
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultUI()
+            .AddDefaultTokenProviders();
 
             builder.Services.AddRazorPages();
 
@@ -42,17 +42,20 @@ namespace StudyHub
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseRouting();
 
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapStaticAssets();
-            app.MapRazorPages()
-               .WithStaticAssets();
+            app.MapRazorPages();
+
             using (var scope = app.Services.CreateScope())
             {
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var services = scope.ServiceProvider;
+
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
                 string[] roles = { "Admin", "Teacher", "Student" };
 
@@ -63,17 +66,34 @@ namespace StudyHub
                         await roleManager.CreateAsync(new IdentityRole(role));
                     }
                 }
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
                 var email = "vinh@gmail.com";
+                var password = "123456Aa@";
 
                 var user = await userManager.FindByEmailAsync(email);
 
-                if (user != null && !await userManager.IsInRoleAsync(user, "Teacher"))
+                if (user == null)
                 {
-                    await userManager.AddToRoleAsync(user, "Teacher");
+                    user = new ApplicationUser
+                    {
+                        UserName = email,
+                        Email = email,
+                        EmailConfirmed = true
+                    };
+
+                    await userManager.CreateAsync(user, password);
                 }
+
+                var currentRoles = await userManager.GetRolesAsync(user);
+
+                if (currentRoles.Any())
+                {
+                    await userManager.RemoveFromRolesAsync(user, currentRoles);
+                }
+
+                await userManager.AddToRoleAsync(user, "Teacher");
             }
+
             await app.RunAsync();
         }
     }

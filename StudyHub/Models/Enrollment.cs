@@ -1,4 +1,5 @@
-﻿namespace StudyHub.Models
+﻿using System.Security.Claims;
+namespace StudyHub.Models
 {
     public class Enrollment
     {

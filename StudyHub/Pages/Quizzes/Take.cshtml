@@ -1,34 +1,113 @@
 ﻿@page
 @model StudyHub.Pages.Quizzes.TakeModel
 
-<h2>@Model.Quiz.Title</h2>
-
-@if (ViewData["Score"] != null)
-{
-    <div style="padding:10px; background:lightgreen;">
-        <h3>
-            Result: @ViewData["Score"] / @ViewData["Total"]
-        </h3>
-    </div>
+@{
+    ViewData["Title"] = "Take Quiz";
 }
 
-<form method="post">
-    @foreach (var q in Model.Quiz.Questions)
-    {
-        <div style="margin-bottom:20px;">
-            <h4>@q.Content</h4>
+<div class="container mt-4">
 
-            @foreach (var a in q.Answers)
-            {
-                <div>
-                    <input type="radio"
-                           name="UserAnswers[@q.Id]"
-                           value="@a.Id" />
-                    @a.Content
-                </div>
-            }
+    <h2>@Model.Quiz.Title</h2>
+
+    @if (ViewData["Score"] != null)
+    {
+        <div class="alert alert-success">
+
+            <h4>
+                Result:
+                @ViewData["Score"] / @ViewData["Total"]
+            </h4>
+
         </div>
     }
 
-    <button type="submit">Submit Quiz</button>
-</form>
+    <form method="post">
+
+        @foreach (var q in Model.Quiz.Questions)
+        {
+            <div class="card mb-4 p-3">
+
+                <h5>@q.Content</h5>
+
+                <div class="form-check">
+
+                    <input class="form-check-input"
+                           type="radio"
+                           name="UserAnswers[@q.Id]"
+                           value="A" />
+
+                    <label class="form-check-label">
+                        @q.OptionA
+                    </label>
+
+                </div>
+
+                <div class="form-check">
+
+                    <input class="form-check-input"
+                           type="radio"
+                           name="UserAnswers[@q.Id]"
+                           value="B" />
+
+                    <label class="form-check-label">
+                        @q.OptionB
+                    </label>
+
+                </div>
+
+                <div class="form-check">
+
+                    <input class="form-check-input"
+                           type="radio"
+                           name="UserAnswers[@q.Id]"
+                           value="C" />
+
+                    <label class="form-check-label">
+                        @q.OptionC
+                    </label>
+
+                </div>
+
+                <div class="form-check">
+
+                    <input class="form-check-input"
+                           type="radio"
+                           name="UserAnswers[@q.Id]"
+                           value="D" />
+
+                    <label class="form-check-label">
+                        @q.OptionD
+                    </label>
+
+                </div>
+
+            </div>
+        }
+
+        <button type="submit"
+                class="btn btn-primary">
+
+            Submit Quiz
+
+        </button>
+        @if (Model.IsSubmitted)
+        {
+            <div class="mt-4 d-flex gap-2">
+
+                <a class="btn btn-warning"
+                       asp-page="/Quizzes/Take"
+                       asp-route-id="@Model.Quiz.Id">
+                    🔁 Retry
+                </a>
+
+                <a class="btn btn-success"
+                       asp-page="/Index">
+                    🏠 Finish
+                </a>
+
+            </div>
+        }
+
+    </form>
+
+</div>

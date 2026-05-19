@@ -15,21 +15,24 @@ namespace StudyHub.Pages.Quizzes
             _context = context;
         }
 
-        public Quiz Quiz { get; set; }
+        public Quiz Quiz { get; set; } = default!;
 
-        // Lưu đáp án user chọn: QuestionId -> AnswerId
+        // QuestionId -> A/B/C/D
+
         [BindProperty]
-        public Dictionary<int, int> UserAnswers { get; set; } = new();
+        public Dictionary<int, string> UserAnswers { get; set; }
+            = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Quiz = await _context.Quizzes
                 .Include(q => q.Questions)
-                    .ThenInclude(q => q.Answers)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (Quiz == null)
+            {
                 return NotFound();
+            }
 
             return Page();
         }
@@ -38,26 +41,28 @@ namespace StudyHub.Pages.Quizzes
         {
             var quiz = await _context.Quizzes
                 .Include(q => q.Questions)
-                    .ThenInclude(q => q.Answers)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quiz == null)
+            {
                 return NotFound();
+            }
 
             int score = 0;
 
             foreach (var question in quiz.Questions)
             {
-                if (UserAnswers.TryGetValue(question.Id, out int answerId))
+                if (UserAnswers.TryGetValue(
+                    question.Id,
+                    out string? selectedAnswer))
                 {
-                    var answer = question.Answers.FirstOrDefault(a => a.Id == answerId);
-
-                    if (answer != null && answer.IsCorrect)
+                    if (selectedAnswer == question.CorrectAnswer)
+                    {
                         score++;
+                    }
                 }
             }
 
-            // 🔥 SAVE RESULT
             var attempt = new QuizAttempt
             {
                 QuizId = quiz.Id,
@@ -74,7 +79,14 @@ namespace StudyHub.Pages.Quizzes
             ViewData["Total"] = quiz.Questions.Count;
 
             Quiz = quiz;
+
+            // 🔥 QUAN TRỌNG NHẤT
+            IsSubmitted = true;
+
             return Page();
         }
+        public bool IsSubmitted { get; set; } = false;
+
+        
     }
 }

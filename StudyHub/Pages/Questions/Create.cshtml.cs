@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using StudyHub.Data;
 using StudyHub.Models;
 
-namespace StudyHub.Pages.Quizzes
+namespace StudyHub.Pages.Questions
 {
     public class CreateModel : PageModel
     {
@@ -15,13 +15,24 @@ namespace StudyHub.Pages.Quizzes
         }
 
         [BindProperty]
-        public Quiz Quiz { get; set; } = new();
+        public List<Question> Questions { get; set; }
+            = new();
 
-        public IActionResult OnGet(int lessonId)
+        [FromQuery]
+        public int QuizId { get; set; }
+
+        [FromQuery]
+        public int Count { get; set; }
+
+        public void OnGet()
         {
-            Quiz.LessonId = lessonId;
-
-            return Page();
+            for (int i = 0; i < Count; i++)
+            {
+                Questions.Add(new Question
+                {
+                    QuizId = QuizId
+                });
+            }
         }
 
         public IActionResult OnPost()
@@ -31,17 +42,11 @@ namespace StudyHub.Pages.Quizzes
                 return Page();
             }
 
-            _context.Quizzes.Add(Quiz);
+            _context.Questions.AddRange(Questions);
 
             _context.SaveChanges();
 
-            return RedirectToPage(
-                "/Questions/Create",
-                new
-                {
-                    quizId = Quiz.Id,
-                    count = Quiz.QuestionCount
-                });
+            return RedirectToPage("/Quizzes/Index");
         }
     }
 }

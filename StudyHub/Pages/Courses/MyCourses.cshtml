@@ -5,64 +5,93 @@
     ViewData["Title"] = "My Courses";
 }
 
-<h1>My Courses</h1>
+<h1 class="mb-3">
+    @(User.IsInRole("Teacher") ? "My Teaching Courses" : "My Enrolled Courses")
+</h1>
 
-@if (Model.Courses.Any())
+@if (!Model.Courses.Any())
+{
+    <div class="alert alert-info">
+        You have not enrolled or created any courses yet.
+    </div>
+}
+else
 {
     <div class="list-group">
+
         @foreach (var course in Model.Courses)
         {
-            var total = Model.TotalLessonsCount[course.Id];
-            var completed = Model.CompletedLessonsCount[course.Id];
-            var percent = total == 0 ? 0 : completed * 100 / total;
+            var total = Model.TotalLessonsCount.ContainsKey(course.Id)
+    ? Model.TotalLessonsCount[course.Id]
+    : 0;
 
-            <div class="list-group-item">
+            var completed = Model.CompletedLessonsCount.ContainsKey(course.Id)
+                ? Model.CompletedLessonsCount[course.Id]
+                : 0;
+
+            var percent = total == 0 ? 0 : (completed * 100 / total);
+
+            <div class="list-group-item mb-2">
 
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5>@course.Title</h5>
+                    <h5 class="mb-1">@course.Title</h5>
 
-                    @if (Model.TotalLessonsCount[course.Id] > 0 &&
-                         Model.CompletedLessonsCount[course.Id] == Model.TotalLessonsCount[course.Id])
+                    @if (User.IsInRole("Student") && total > 0 && completed == total)
                     {
                         <span class="badge bg-success">Completed</span>
                     }
                 </div>
 
-                <p>@course.Description</p>
-                <small>Teacher: @course.Teacher.Email</small>
+                <p class="mb-1 text-muted">@course.Description</p>
 
-                <div class="mt-2">
-                    <small class="text-success">
-                        Progress: @completed / @total lessons completed
-                    </small>
-                </div>
+                <small class="text-secondary">
+                    Teacher: @course.Teacher?.Email
+                </small>
 
-                <div class="progress mt-2">
-                    <div class="progress-bar"
-                         role="progressbar"
-                         style="width:@percent%">
-                        @percent%
+                @if (User.IsInRole("Student"))
+                {
+                    <div class="mt-2">
+                        <small>
+                            Progress: @completed / @total lessons
+                        </small>
                     </div>
-                </div>
+
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar"
+                             role="progressbar"
+                             style="width:@percent%">
+                        </div>
+                    </div>
+                }
 
                 <div class="mt-3 d-flex gap-2">
+
                     <a asp-page="/Courses/Details"
                            asp-route-id="@course.Id"
-                           class="btn btn-outline-secondary">
-                        View Course
+                           class="btn btn-outline-secondary btn-sm">
+                        View
                     </a>
 
-                    <a asp-page-handler="Continue"
-                           asp-route-id="@course.Id"
-                           class="btn btn-primary">
-                        Continue Learning
-                    </a>
+                    @if (User.IsInRole("Student"))
+                    {
+                        <a asp-page-handler="Continue"
+                               asp-route-id="@course.Id"
+                               class="btn btn-primary btn-sm">
+                            Continue
+                        </a>
+                    }
+
+                    @if (User.IsInRole("Teacher"))
+                    {
+                        <a asp-page="/Courses/Details"
+                               asp-route-id="@course.Id"
+                               class="btn btn-info btn-sm">
+                            Students
+                        </a>
+                    }
+
                 </div>
             </div>
         }
     </div>
-}
-else
-{
-    <p>You have not enrolled in any courses yet.</p>
 }

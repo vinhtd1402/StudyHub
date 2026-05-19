@@ -1,0 +1,92 @@
+﻿@page
+@model StudyHub.Pages.Questions.CreateModel
+
+<div class="container mt-4">
+
+    <h2>Create Questions</h2>
+
+    <form method="post">
+
+        @for (int i = 0; i < Model.Questions.Count; i++)
+        {
+            <div class="card mb-4 p-3">
+
+                <h4>Question @(i + 1)</h4>
+
+                <input type="hidden"
+                       asp-for="Questions[i].QuizId" />
+
+                <div class="mb-3">
+
+                    <label>Question</label>
+
+                    <input asp-for="Questions[i].Content"
+                           class="form-control" />
+
+                </div>
+
+                <div class="mb-2">
+
+                    <label>Option A</label>
+
+                    <input asp-for="Questions[i].OptionA"
+                           class="form-control" />
+
+                </div>
+
+                <div class="mb-2">
+
+                    <label>Option B</label>
+
+                    <input asp-for="Questions[i].OptionB"
+                           class="form-control" />
+
+                </div>
+
+                <div class="mb-2">
+
+                    <label>Option C</label>
+
+                    <input asp-for="Questions[i].OptionC"
+                           class="form-control" />
+
+                </div>
+
+                <div class="mb-2">
+
+                    <label>Option D</label>
+
+                    <input asp-for="Questions[i].OptionD"
+                           class="form-control" />
+
+                </div>
+
+                <div class="mb-2">
+
+                    <label>Correct Answer</label>
+
+                    <select asp-for="Questions[i].CorrectAnswer"
+                            class="form-select">
+
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+        }
+
+        <button type="submit"
+                class="btn btn-success">
+
+            Save Questions
+
+        </button>
+
+    </form>
+
+</div>

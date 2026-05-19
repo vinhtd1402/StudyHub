@@ -36,6 +36,7 @@ namespace StudyHub.Pages_Lessons
             }
 
             var lesson = await _context.Lessons
+                .Include(l => l.Quizzes)   // 🔥 FIX QUAN TRỌNG
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (lesson == null)
