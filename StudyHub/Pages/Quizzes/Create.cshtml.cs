@@ -29,10 +29,10 @@ namespace StudyHub.Pages.Quizzes
             }
 
             _context.Quizzes.Add(Quiz);
-
             await _context.SaveChangesAsync();
 
-            return RedirectToPage("/Index");
+            // ⚠ FIX QUAN TRỌNG
+            return RedirectToPage("/Quizzes/Index");
         }
     }
 }

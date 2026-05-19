@@ -1,0 +1,43 @@
+﻿@page
+@model StudyHub.Pages.Quizzes.IndexModel
+
+<h2>Quiz List</h2>
+
+<a asp-page="/Quizzes/Create" class="btn btn-primary">
+    + Create Quiz
+</a>
+
+<br />
+<br />
+
+@if (!Model.Quizzes.Any())
+{
+    <p>No quizzes found</p>
+}
+else
+{
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Lesson</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var q in Model.Quizzes)
+            {
+                <tr>
+                    <td>@q.Title</td>
+                    <td>@q.Lesson?.Title</td>
+                    <td>
+                        <a asp-page="/Quizzes/Take" asp-route-id="@q.Id">
+                            Take Quiz
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
