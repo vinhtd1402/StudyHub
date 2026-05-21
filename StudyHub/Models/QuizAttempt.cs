@@ -1,20 +1,19 @@
-﻿using System;
+﻿using StudyHub.Models;
 
-namespace StudyHub.Models
+public class QuizAttempt
 {
-    public class QuizAttempt
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public int QuizId { get; set; }
-        public Quiz Quiz { get; set; } = null!;
+    public int QuizId { get; set; }
+    public Quiz Quiz { get; set; } = null!;
 
-        public string UserId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
 
-        public int Score { get; set; }
+    public ApplicationUser? User { get; set; }
 
-        public int TotalQuestions { get; set; }
+    public int Score { get; set; }
 
-        public DateTime TakenAt { get; set; } = DateTime.Now;
-    }
+    public int TotalQuestions { get; set; }
+
+    public DateTime TakenAt { get; set; } = DateTime.Now;
 }

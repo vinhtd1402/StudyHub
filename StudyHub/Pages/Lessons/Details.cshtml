@@ -19,11 +19,14 @@
 
             <h3>Quizzes</h3>
 
-            <a asp-page="/Quizzes/Create"
-                   asp-route-lessonId="@Model.Lesson.Id"
-                   class="btn btn-success">
-                Create Quiz
-            </a>
+            @if (User.IsInRole("Teacher"))
+            {
+                <a asp-page="/Quizzes/Create"
+                       asp-route-lessonId="@Model.Lesson.Id"
+                       class="btn btn-success">
+                    Create Quiz
+                </a>
+            }
 
         </div>
 
@@ -38,11 +41,22 @@
 
                         <span>@quiz.Title</span>
 
-                        <a class="btn btn-sm btn-primary"
-                               asp-page="/Quizzes/Take"
-                               asp-route-id="@quiz.Id">
-                            Start
-                        </a>
+                        @if (User.IsInRole("Student"))
+                        {
+                            <a class="btn btn-sm btn-primary"
+                                   asp-page="/Quizzes/Take"
+                                   asp-route-id="@quiz.Id">
+                                Start
+                            </a>
+                        }
+                        else if (User.IsInRole("Teacher"))
+                        {
+                            <a class="btn btn-sm btn-info"
+                                   asp-page="/Quizzes/Results"
+                                   asp-route-quizId="@quiz.Id">
+                                View Results
+                            </a>
+                        }
 
                     </li>
                 }
@@ -59,6 +73,39 @@
     </div>
 
     <hr />
+    @if (User.IsInRole("Teacher"))
+    {
+        <div class="mt-4">
+            <h3>Student Results</h3>
+
+            @if (Model.QuizResults != null && Model.QuizResults.Any())
+            {
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.QuizResults)
+                        {
+                            <tr>
+                                <td>@r.StudentName</td>
+                                <td>@r.Score</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-muted">No results yet.</p>
+            }
+        </div>
+
+        <hr />
+    }
 
     <!-- NAVIGATION -->
 
@@ -81,7 +128,7 @@
 
         <div class="d-flex gap-2">
 
-            @if (User.Identity!.IsAuthenticated)
+            @if (User.IsInRole("Student"))
             {
                 <form method="post"
                       asp-page-handler="Complete"
@@ -89,9 +136,7 @@
 
                     <button type="submit"
                             class="btn btn-success">
-
                         Mark as Completed
-
                     </button>
 
                 </form>

@@ -3,9 +3,12 @@
 
 <h2>Quiz List</h2>
 
-<a asp-page="/Quizzes/Create" class="btn btn-primary">
-    + Create Quiz
-</a>
+@if (User.IsInRole("Teacher"))
+{
+    <a asp-page="/Quizzes/Create" class="btn btn-primary">
+        + Create Quiz
+    </a>
+}
 
 <br />
 <br />

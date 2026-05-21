@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
-
 namespace StudyHub.Pages.Quizzes
 {
     public class TakeModel : PageModel
@@ -62,11 +61,13 @@ namespace StudyHub.Pages.Quizzes
                     }
                 }
             }
+            var user = await _context.Users
+    .FirstOrDefaultAsync(u => u.UserName == User.Identity!.Name);
 
             var attempt = new QuizAttempt
             {
                 QuizId = quiz.Id,
-                UserId = User.Identity?.Name ?? "Anonymous",
+                UserId = user!.Id,
                 Score = score,
                 TotalQuestions = quiz.Questions.Count,
                 TakenAt = DateTime.Now

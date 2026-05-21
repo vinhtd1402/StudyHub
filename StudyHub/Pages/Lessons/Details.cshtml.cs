@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using StudyHub.Models;
 namespace StudyHub.Pages_Lessons
 {
     public class DetailsModel : PageModel
@@ -27,7 +27,7 @@ namespace StudyHub.Pages_Lessons
         }
 
         public Lesson Lesson { get; set; } = default!;
-
+        public List<QuizResultViewModel> QuizResults { get; set; } = new();
         public async Task<IActionResult> OnGetAsync(int? id)
         {
             if (id == null)
@@ -36,7 +36,7 @@ namespace StudyHub.Pages_Lessons
             }
 
             var lesson = await _context.Lessons
-                .Include(l => l.Quizzes)   // 🔥 FIX QUAN TRỌNG
+                .Include(l => l.Quizzes)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (lesson == null)
@@ -55,6 +55,20 @@ namespace StudyHub.Pages_Lessons
                 .Where(l => l.CourseId == lesson.CourseId && l.Id > lesson.Id)
                 .OrderBy(l => l.Id)
                 .FirstOrDefaultAsync();
+
+            if (User.IsInRole("Teacher"))
+            {
+                QuizResults = await _context.QuizAttempts
+                    .Include(x => x.User)
+                    .Include(x => x.Quiz)
+                    .Where(x => x.Quiz.LessonId == Lesson.Id)
+                    .Select(x => new QuizResultViewModel
+                    {
+                        StudentName = x.User.UserName,
+                        Score = x.Score
+                    })
+                    .ToListAsync();
+            }
 
             return Page();
         }

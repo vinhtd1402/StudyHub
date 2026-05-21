@@ -1,0 +1,40 @@
+﻿@page
+@model StudyHub.Pages.Quizzes.ResultsModel
+
+@{
+    ViewData["Title"] = "Quiz Results";
+}
+
+<h2>@Model.Quiz.Title - Results</h2>
+
+@if (!Model.Attempts.Any())
+{
+    <div class="alert alert-warning">
+        No student has taken this quiz yet.
+    </div>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Score</th>
+                <th>Total Questions</th>
+                <th>Taken At</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var item in Model.Attempts)
+            {
+                <tr>
+                    <td>@item.User?.UserName</td>
+                    <td>@item.Score</td>
+                    <td>@item.TotalQuestions</td>
+                    <td>@item.TakenAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

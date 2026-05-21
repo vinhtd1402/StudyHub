@@ -11,7 +11,6 @@ namespace StudyHub.Data
         {
         }
         public DbSet<Quiz> Quizzes { get; set; }
-
         public DbSet<Question> Questions { get; set; }
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
         public DbSet<Course> Courses { get; set; }
@@ -38,6 +37,12 @@ namespace StudyHub.Data
                 .HasOne(c => c.Teacher)
                 .WithMany()
                 .HasForeignKey(c => c.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<QuizAttempt>()
+                .HasOne(q => q.User)
+                .WithMany()
+                .HasForeignKey(q => q.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }
