@@ -16,5 +16,7 @@ namespace StudyHub.Models
         public string TeacherId { get; set; } = string.Empty;
         public ApplicationUser? Teacher { get; set; }
         public ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
+        public ICollection<Enrollment> Enrollments { get; set; }
+    = new List<Enrollment>();
     }
 }

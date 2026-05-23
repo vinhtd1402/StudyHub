@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
@@ -12,19 +8,39 @@ namespace StudyHub.Pages_Lessons
 {
     public class IndexModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public IndexModel(StudyHub.Data.ApplicationDbContext context)
+        public IndexModel(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        public IList<Lesson> Lesson { get;set; } = default!;
+        public IList<Lesson> Lessons { get; set; } = default!;
 
         public async Task OnGetAsync()
         {
-            Lesson = await _context.Lessons
-                .Include(l => l.Course).ToListAsync();
+            if (User.IsInRole("Teacher"))
+            {
+                Lessons = await _context.Lessons
+                    .Include(l => l.Course)
+                    .ToListAsync();
+            }
+            else
+            {
+                var userId = _userManager.GetUserId(User);
+
+                Lessons = await _context.Lessons
+                    .Include(l => l.Course)
+                    .Where(l =>
+                        _context.Enrollments.Any(e =>
+                            e.StudentId == userId &&
+                            e.CourseId == l.CourseId))
+                    .ToListAsync();
+            }
         }
     }
 }

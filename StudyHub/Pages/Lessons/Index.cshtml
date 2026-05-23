@@ -2,51 +2,107 @@
 @model StudyHub.Pages_Lessons.IndexModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Lessons";
 }
 
-<h1>Index</h1>
+<h1>Lessons</h1>
 
-<p>
-    <a asp-page="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Lesson[0].Title)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Lesson[0].Content)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Lesson[0].Course)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model.Lesson) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Content)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Course.Title)
-            </td>
-            <td>
-                    @if (User.IsInRole("Teacher"))
-                    {
-                        <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a>
-                        <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
-                    }
-
-                    <a asp-page="./Details" asp-route-id="@item.Id">Details</a>
-            </td>
-        </tr>
+@if (User.IsInRole("Teacher"))
+{
+    <p>
+        <a asp-page="Create" class="btn btn-primary">
+            Create New
+        </a>
+    </p>
 }
-    </tbody>
-</table>
+
+@if (Model.Lessons.Any())
+{
+    <table class="table table-bordered table-hover">
+
+        <thead class="table-dark">
+            <tr>
+                <th>
+                    Title
+                </th>
+
+                <th>
+                    Content
+                </th>
+
+                <th>
+                    Course
+                </th>
+
+                <th width="220">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @foreach (var item in Model.Lessons)
+            {
+                <tr>
+
+                    <td>
+                        @item.Title
+                    </td>
+
+                    <td>
+                        @(item.Content?.Length > 80
+                            ? item.Content.Substring(0, 80) + "..."
+                            : item.Content)
+                    </td>
+
+                    <td>
+                        @item.Course?.Title
+                    </td>
+
+                    <td>
+
+                        <a asp-page="./Details"
+                               asp-route-id="@item.Id"
+                               class="btn btn-sm btn-info">
+
+                            Details
+
+                        </a>
+
+                        @if (User.IsInRole("Teacher"))
+                        {
+                            <a asp-page="./Edit"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-warning">
+
+                                Edit
+
+                            </a>
+
+                            <a asp-page="./Delete"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-danger">
+
+                                Delete
+
+                            </a>
+                        }
+
+                    </td>
+
+                </tr>
+            }
+
+        </tbody>
+
+    </table>
+}
+else
+{
+    <div class="alert alert-info">
+
+        No lessons available.
+
+    </div>
+}

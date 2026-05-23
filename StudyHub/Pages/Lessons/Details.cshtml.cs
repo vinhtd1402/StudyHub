@@ -37,6 +37,7 @@ namespace StudyHub.Pages_Lessons
             }
 
             var lesson = await _context.Lessons
+                .Include(l => l.Course)
                 .Include(l => l.Quizzes)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -47,13 +48,36 @@ namespace StudyHub.Pages_Lessons
 
             Lesson = lesson;
 
+            if (!User.IsInRole("Teacher"))
+            {
+                var userId = _userManager.GetUserId(User);
+
+                var isEnrolled = await _context.Enrollments
+                    .AnyAsync(e =>
+                        e.StudentId == userId &&
+                        e.CourseId == lesson.CourseId);
+
+                if (!isEnrolled)
+                {
+                    TempData["Error"] =
+                        "You must enroll in this course first.";
+
+                    return RedirectToPage("/Courses/Details",
+                        new { id = lesson.CourseId });
+                }
+            }
+
             PreviousLesson = await _context.Lessons
-                .Where(l => l.CourseId == lesson.CourseId && l.Id < lesson.Id)
+                .Where(l =>
+                    l.CourseId == lesson.CourseId &&
+                    l.Id < lesson.Id)
                 .OrderByDescending(l => l.Id)
                 .FirstOrDefaultAsync();
 
             NextLesson = await _context.Lessons
-                .Where(l => l.CourseId == lesson.CourseId && l.Id > lesson.Id)
+                .Where(l =>
+                    l.CourseId == lesson.CourseId &&
+                    l.Id > lesson.Id)
                 .OrderBy(l => l.Id)
                 .FirstOrDefaultAsync();
 
@@ -65,7 +89,7 @@ namespace StudyHub.Pages_Lessons
                     .Where(x => x.Quiz.LessonId == Lesson.Id)
                     .Select(x => new QuizResultViewModel
                     {
-                        StudentName = x.User.UserName,
+                        StudentName = x.User.FullName,
                         Score = x.Score
                     })
                     .ToListAsync();
