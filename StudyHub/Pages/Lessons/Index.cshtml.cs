@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
@@ -20,27 +22,68 @@ namespace StudyHub.Pages_Lessons
         }
 
         public IList<Lesson> Lessons { get; set; } = default!;
+        public SelectList CourseOptions { get; set; } = default!;
+
+        [BindProperty(SupportsGet = true)]
+        public string? SearchTerm { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? CourseId { get; set; }
 
         public async Task OnGetAsync()
         {
-            if (User.IsInRole("Teacher"))
+            var lessonsQuery = _context.Lessons
+                .Include(l => l.Course)
+                .AsQueryable();
+
+            if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
             {
-                Lessons = await _context.Lessons
-                    .Include(l => l.Course)
-                    .ToListAsync();
+                CourseOptions = await BuildCourseOptionsAsync(_context.Courses);
             }
             else
             {
                 var userId = _userManager.GetUserId(User);
 
-                Lessons = await _context.Lessons
-                    .Include(l => l.Course)
-                    .Where(l =>
-                        _context.Enrollments.Any(e =>
-                            e.StudentId == userId &&
-                            e.CourseId == l.CourseId))
-                    .ToListAsync();
+                lessonsQuery = lessonsQuery.Where(l =>
+                    _context.Enrollments.Any(e =>
+                        e.StudentId == userId &&
+                        e.CourseId == l.CourseId));
+
+                var enrolledCourseIds = _context.Enrollments
+                    .Where(e => e.StudentId == userId)
+                    .Select(e => e.CourseId);
+
+                CourseOptions = await BuildCourseOptionsAsync(
+                    _context.Courses.Where(c => enrolledCourseIds.Contains(c.Id)));
             }
+
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                lessonsQuery = lessonsQuery.Where(l =>
+                    l.Title.Contains(SearchTerm) ||
+                    (l.Content != null && l.Content.Contains(SearchTerm)) ||
+                    (l.Course != null && l.Course.Title.Contains(SearchTerm)));
+            }
+
+            if (CourseId.HasValue)
+            {
+                lessonsQuery = lessonsQuery.Where(l => l.CourseId == CourseId.Value);
+            }
+
+            Lessons = await lessonsQuery
+                .OrderBy(l => l.Course != null ? l.Course.Title : string.Empty)
+                .ThenBy(l => l.Id)
+                .ToListAsync();
+        }
+
+        private async Task<SelectList> BuildCourseOptionsAsync(IQueryable<Course> coursesQuery)
+        {
+            var courses = await coursesQuery
+                .OrderBy(c => c.Title)
+                .Select(c => new { c.Id, c.Title })
+                .ToListAsync();
+
+            return new SelectList(courses, "Id", "Title", CourseId);
         }
     }
 }

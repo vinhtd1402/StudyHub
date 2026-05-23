@@ -91,8 +91,8 @@ namespace StudyHub.Pages.Admin
                 return Page();
             }
 
-            StatusMessage = $"Teacher account '{Input.Email}' was created.";
-            return RedirectToPage();
+            TempData["StatusMessage"] = $"Teacher account '{Input.Email}' was created.";
+            return RedirectToPage("/Admin/Teachers");
         }
 
         private void AddIdentityErrors(IdentityResult result)

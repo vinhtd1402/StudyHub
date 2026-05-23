@@ -7,14 +7,44 @@
 
 <h1>Lessons</h1>
 
-@if (User.IsInRole("Teacher"))
-{
-    <p>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+
+    <form method="get" class="row g-2 flex-grow-1">
+
+        <div class="col-md-5">
+            <input asp-for="SearchTerm"
+                   class="form-control"
+                   placeholder="Search lessons, content, or course" />
+        </div>
+
+        <div class="col-md-4">
+            <select asp-for="CourseId"
+                    asp-items="Model.CourseOptions"
+                    class="form-select">
+                <option value="">All courses</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                Search
+            </button>
+
+            <a asp-page="./Index" class="btn btn-outline-secondary">
+                Clear
+            </a>
+        </div>
+
+    </form>
+
+    @if (User.IsInRole("Teacher"))
+    {
         <a asp-page="Create" class="btn btn-primary">
             Create New
         </a>
-    </p>
-}
+    }
+
+</div>
 
 @if (Model.Lessons.Any())
 {
@@ -102,7 +132,7 @@ else
 {
     <div class="alert alert-info">
 
-        No lessons available.
+        No lessons match your filters.
 
     </div>
 }

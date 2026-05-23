@@ -69,15 +69,6 @@
 
                         <li class="nav-item">
                             <a class="nav-link"
-                                   asp-page="/About">
-
-                                About
-
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link"
                                    asp-page="/Courses/Index">
 
                                 Courses
@@ -85,14 +76,17 @@
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link"
+                        @if (!User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
                                    asp-page="/Courses/MyCourses">
 
-                                My Courses
+                                    My Courses
 
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link"
@@ -107,13 +101,22 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link"
-                                   asp-page="/Admin/CreateTeacher">
+                                   asp-page="/Admin/Teachers">
 
                                     Admin
 
                                 </a>
                             </li>
                         }
+
+                        <li class="nav-item">
+                            <a class="nav-link"
+                                   asp-page="/About">
+
+                                About
+
+                            </a>
+                        </li>
 
                     </ul>
 
