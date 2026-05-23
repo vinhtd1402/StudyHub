@@ -13,6 +13,7 @@ namespace StudyHub.Pages_Lessons
 {
     public class DetailsModel : PageModel
     {
+        public string? EmbedYoutubeUrl { get; set; }
         private readonly StudyHub.Data.ApplicationDbContext _context;
         public Lesson? PreviousLesson { get; set; }
         public Lesson? NextLesson { get; set; }
