@@ -8,26 +8,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using StudyHub.Models;
+using StudyHub.Services;
 namespace StudyHub.Pages_Lessons
 {
     public class DetailsModel : PageModel
     {
+        public string? EmbedYoutubeUrl { get; set; }
         private readonly StudyHub.Data.ApplicationDbContext _context;
         public Lesson? PreviousLesson { get; set; }
         public Lesson? NextLesson { get; set; }
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccessControlService _accessControlService;
 
         public DetailsModel(
-    ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager)
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            AccessControlService accessControlService)
         {
             _context = context;
             _userManager = userManager;
+            _accessControlService = accessControlService;
         }
 
         public Lesson Lesson { get; set; } = default!;
-
+        public List<QuizResultViewModel> QuizResults { get; set; } = new();
         public async Task<IActionResult> OnGetAsync(int? id)
         {
             if (id == null)
@@ -36,6 +41,8 @@ namespace StudyHub.Pages_Lessons
             }
 
             var lesson = await _context.Lessons
+                .Include(l => l.Course)
+                .Include(l => l.Quizzes)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (lesson == null)
@@ -45,15 +52,58 @@ namespace StudyHub.Pages_Lessons
 
             Lesson = lesson;
 
+            if (User.IsInRole("Teacher"))
+            {
+                var userId = _userManager.GetUserId(User);
+
+                if (userId == null ||
+                    !await _accessControlService.TeacherOwnsLessonAsync(userId, lesson.Id))
+                {
+                    return Forbid();
+                }
+            }
+            else if (!User.IsInRole("Admin"))
+            {
+                var userId = _userManager.GetUserId(User);
+
+                if (userId == null ||
+                    !await _accessControlService.StudentCanViewLessonAsync(userId, lesson.Id))
+                {
+                    TempData["Error"] =
+                        "You must enroll in this course first.";
+
+                    return RedirectToPage("/Courses/Details",
+                        new { id = lesson.CourseId });
+                }
+            }
+
             PreviousLesson = await _context.Lessons
-                .Where(l => l.CourseId == lesson.CourseId && l.Id < lesson.Id)
+                .Where(l =>
+                    l.CourseId == lesson.CourseId &&
+                    l.Id < lesson.Id)
                 .OrderByDescending(l => l.Id)
                 .FirstOrDefaultAsync();
 
             NextLesson = await _context.Lessons
-                .Where(l => l.CourseId == lesson.CourseId && l.Id > lesson.Id)
+                .Where(l =>
+                    l.CourseId == lesson.CourseId &&
+                    l.Id > lesson.Id)
                 .OrderBy(l => l.Id)
                 .FirstOrDefaultAsync();
+
+            if (User.IsInRole("Teacher"))
+            {
+                QuizResults = await _context.QuizAttempts
+                    .Include(x => x.User)
+                    .Include(x => x.Quiz)
+                    .Where(x => x.Quiz.LessonId == Lesson.Id)
+                    .Select(x => new QuizResultViewModel
+                    {
+                        StudentName = x.User.FullName,
+                        Score = x.Score
+                    })
+                    .ToListAsync();
+            }
 
             return Page();
         }

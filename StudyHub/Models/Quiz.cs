@@ -1,14 +1,26 @@
-﻿using StudyHub.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class Quiz
+namespace StudyHub.Models
 {
-    public int Id { get; set; }
+    public class Quiz
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
-    public string Title { get; set; } = string.Empty;
+        [Required]
+        public string Title { get; set; } = string.Empty;
 
-    public int LessonId { get; set; }
+        public int LessonId { get; set; }
 
-    public Lesson Lesson { get; set; } = null!;
+        public Lesson? Lesson { get; set; }
 
-    public ICollection<Question> Questions { get; set; } = new List<Question>();
+        public int QuestionCount { get; set; }
+
+        public int PassingScorePercent { get; set; } = 70;
+
+        public ICollection<Question> Questions { get; set; }
+            = new List<Question>();
+    }
 }

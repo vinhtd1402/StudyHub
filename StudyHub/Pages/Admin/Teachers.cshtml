@@ -1,0 +1,195 @@
+@page
+@model StudyHub.Pages.Admin.TeachersModel
+
+@{
+    ViewData["Title"] = "Teachers";
+}
+
+<div class="container mt-5">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+
+            <h1 class="fw-bold mb-1">
+                Teachers
+            </h1>
+
+            <p class="text-muted mb-0">
+                Manage teacher accounts for StudyHub
+            </p>
+
+        </div>
+
+        <a class="btn btn-primary rounded-3"
+           asp-page="/Admin/CreateTeacher">
+
+            Create Teacher
+
+        </a>
+
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <a class="btn @(string.IsNullOrWhiteSpace(Model.StatusFilter) ? "btn-primary" : "btn-outline-primary")"
+           asp-page="/Admin/Teachers">
+            All
+        </a>
+
+        <a class="btn @(Model.StatusFilter == "Active" ? "btn-primary" : "btn-outline-primary")"
+           asp-page="/Admin/Teachers"
+           asp-route-statusFilter="Active">
+            Active
+        </a>
+
+        <a class="btn @(Model.StatusFilter == "Suspended" ? "btn-primary" : "btn-outline-primary")"
+           asp-page="/Admin/Teachers"
+           asp-route-statusFilter="Suspended">
+            Suspended
+        </a>
+
+        <a class="btn btn-outline-secondary"
+           asp-page="/Admin/Credits">
+            Credit Approvals
+        </a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @Model.StatusMessage
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 rounded-4">
+
+        <div class="card-body p-0">
+
+            @if (Model.Teachers.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th scope="col">
+                                    Full Name
+                                </th>
+
+                                <th scope="col">
+                                    Email
+                                </th>
+
+                                <th scope="col">
+                                    Phone
+                                </th>
+
+                                <th scope="col">
+                                    Wallet
+                                </th>
+
+                                <th scope="col">
+                                    Next Fee
+                                </th>
+
+                                <th scope="col">
+                                    Status
+                                </th>
+
+                                <th scope="col"></th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var teacher in Model.Teachers)
+                            {
+                                <tr>
+
+                                    <td>
+                                        @teacher.FullName
+                                    </td>
+
+                                    <td>
+                                        @teacher.Email
+                                    </td>
+
+                                    <td>
+                                        @(string.IsNullOrWhiteSpace(teacher.PhoneNumber) ? "-" : teacher.PhoneNumber)
+                                    </td>
+
+                                    <td>
+                                        @teacher.WalletBalance.ToString("N0") VND
+                                    </td>
+
+                                    <td>
+                                        @(teacher.NextTeacherBillingAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")
+                                    </td>
+
+                                    <td>
+                                        @if (teacher.IsTeacherSuspended)
+                                        {
+                                            <span class="badge bg-danger">Suspended</span>
+                                            <div class="text-muted small">@teacher.TeacherSuspensionReason</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                    </td>
+
+                                    <td class="text-end">
+                                        @if (teacher.IsTeacherSuspended)
+                                        {
+                                            <form method="post"
+                                                  asp-page-handler="Unlock"
+                                                  asp-route-id="@teacher.Id">
+                                                <input type="hidden" asp-for="StatusFilter" />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    Unlock
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="p-5 text-center">
+
+                    <h2 class="h5 fw-semibold">
+                        No teachers yet
+                    </h2>
+
+                    <p class="text-muted mb-4">
+                        Create the first teacher account to start building courses.
+                    </p>
+
+                    <a class="btn btn-primary rounded-3"
+                       asp-page="/Admin/CreateTeacher">
+
+                        Create Teacher
+
+                    </a>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

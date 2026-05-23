@@ -5,7 +5,7 @@
 namespace StudyHub.Migrations
 {
     /// <inheritdoc />
-    public partial class AddEnrollmentTable : Migration
+    public partial class FixEnrollmentNavigation : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

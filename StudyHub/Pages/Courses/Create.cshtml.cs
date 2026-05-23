@@ -9,7 +9,6 @@ using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using StudyHub.Models;
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
@@ -28,7 +27,6 @@ namespace StudyHub.Pages_Courses
 
         public IActionResult OnGet()
         {
-        ViewData["TeacherId"] = new SelectList(_context.Users, "Id", "Id");
             return Page();
         }
 
@@ -43,6 +41,17 @@ namespace StudyHub.Pages_Courses
                 return Page();
             }
             var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended)
+            {
+                return Forbid();
+            }
+
             Course.TeacherId = user!.Id;
             _context.Courses.Add(Course);
             await _context.SaveChangesAsync();

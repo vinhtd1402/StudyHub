@@ -1,4 +1,4 @@
-﻿namespace StudyHub.Models
+namespace StudyHub.Models
 {
     public class Enrollment
     {
@@ -9,6 +9,8 @@
 
         public int CourseId { get; set; }
         public Course? Course { get; set; }
+
+        public decimal PricePaid { get; set; }
 
         public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
     }

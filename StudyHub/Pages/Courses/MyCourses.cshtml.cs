@@ -8,7 +8,7 @@ using StudyHub.Models;
 
 namespace StudyHub.Pages_Courses
 {
-    [Authorize(Roles = "Student")]
+    [Authorize(Roles = "Student,Teacher")]
     public class MyCoursesModel : PageModel
     {
         private readonly ApplicationDbContext _context;
@@ -26,29 +26,104 @@ namespace StudyHub.Pages_Courses
 
         public IList<Course> Courses { get; set; } = new List<Course>();
 
+        [BindProperty(SupportsGet = true)]
+        public string? SearchTerm { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string StatusFilter { get; set; } = "all";
+
         public async Task OnGetAsync()
         {
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null) return;
 
-            Courses = await _context.Enrollments
-                .Where(e => e.StudentId == user.Id)
-                .Include(e => e.Course)
-                .ThenInclude(c => c.Teacher)
-                .Select(e => e.Course)
-                .ToListAsync();
+            if (User.IsInRole("Student"))
+            {
+                Courses = await _context.Enrollments
+                    .Where(e => e.StudentId == user.Id)
+                    .Include(e => e.Course)
+                    .ThenInclude(c => c.Teacher)
+                    .Where(e => e.Course != null)
+                    .Select(e => e.Course!)
+                    .ToListAsync();
+            }
+            else if (User.IsInRole("Teacher"))
+            {
+                Courses = await _context.Courses
+                    .Where(c => c.TeacherId == user.Id)
+                    .Include(c => c.Teacher)
+                    .ToListAsync();
+            }
+
+            await LoadLessonCountsAsync(user.Id);
+            ApplyFilters();
+        }
+
+        private async Task LoadLessonCountsAsync(string userId)
+        {
             foreach (var course in Courses)
             {
                 TotalLessonsCount[course.Id] = await _context.Lessons
                     .CountAsync(l => l.CourseId == course.Id);
 
                 CompletedLessonsCount[course.Id] = await _context.LessonProgresses
+                    .Include(lp => lp.Lesson)
                     .CountAsync(lp =>
-                        lp.StudentId == user.Id &&
+                        lp.StudentId == userId &&
                         lp.IsCompleted &&
                         lp.Lesson.CourseId == course.Id);
             }
+        }
+
+        private void ApplyFilters()
+        {
+            var filteredCourses = Courses.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                filteredCourses = filteredCourses.Where(course =>
+                    course.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    course.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (course.Teacher?.FullName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (course.Teacher?.Email?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            if (User.IsInRole("Student"))
+            {
+                filteredCourses = StatusFilter switch
+                {
+                    "completed" => filteredCourses.Where(IsCompleted),
+                    "in-progress" => filteredCourses.Where(IsInProgress),
+                    "not-started" => filteredCourses.Where(IsNotStarted),
+                    _ => filteredCourses
+                };
+            }
+
+            Courses = filteredCourses
+                .OrderBy(course => course.Title)
+                .ToList();
+        }
+
+        private bool IsCompleted(Course course)
+        {
+            var total = TotalLessonsCount.GetValueOrDefault(course.Id);
+            var completed = CompletedLessonsCount.GetValueOrDefault(course.Id);
+
+            return total > 0 && completed == total;
+        }
+
+        private bool IsInProgress(Course course)
+        {
+            var total = TotalLessonsCount.GetValueOrDefault(course.Id);
+            var completed = CompletedLessonsCount.GetValueOrDefault(course.Id);
+
+            return total > 0 && completed > 0 && completed < total;
+        }
+
+        private bool IsNotStarted(Course course)
+        {
+            return CompletedLessonsCount.GetValueOrDefault(course.Id) == 0;
         }
         public async Task<IActionResult> OnGetContinueAsync(int id)
         {

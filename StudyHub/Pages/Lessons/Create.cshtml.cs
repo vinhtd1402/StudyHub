@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using StudyHub.Services;
 
 namespace StudyHub.Pages_Lessons
 {
@@ -15,15 +18,34 @@ namespace StudyHub.Pages_Lessons
     public class CreateModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccessControlService _accessControlService;
 
-        public CreateModel(StudyHub.Data.ApplicationDbContext context)
+        public CreateModel(
+            StudyHub.Data.ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            AccessControlService accessControlService)
         {
             _context = context;
+            _userManager = userManager;
+            _accessControlService = accessControlService;
         }
 
-        public IActionResult OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
-        ViewData["CourseId"] = new SelectList(_context.Courses, "Id", "Title");
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended)
+            {
+                return Forbid();
+            }
+
+            await LoadCourseOptionsAsync(user.Id);
             return Page();
         }
 
@@ -35,13 +57,46 @@ namespace StudyHub.Pages_Lessons
         {
             if (!ModelState.IsValid)
             {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await LoadCourseOptionsAsync(currentUser.Id);
+                }
+
                 return Page();
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended)
+            {
+                return Forbid();
+            }
+
+            if (!await _accessControlService.TeacherOwnsCourseAsync(user.Id, Lesson.CourseId))
+            {
+                return Forbid();
             }
 
             _context.Lessons.Add(Lesson);
             await _context.SaveChangesAsync();
 
             return RedirectToPage("./Index");
+        }
+
+        private async Task LoadCourseOptionsAsync(string teacherId)
+        {
+            var courses = await _context.Courses
+                .Where(c => c.TeacherId == teacherId)
+                .OrderBy(c => c.Title)
+                .ToListAsync();
+
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Title");
         }
     }
 }
