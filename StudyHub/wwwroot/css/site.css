@@ -152,19 +152,22 @@ main {
 
 /* ACCOUNT MANAGE */
 
-.account-manage .manage-nav .nav-link {
+.account-manage .manage-nav .nav-link,
+.nav-pills.flex-column .nav-link {
     color: #1e293b !important;
     margin-right: 0;
     border-radius: 8px;
 }
 
-.account-manage .manage-nav .nav-link:hover {
+.account-manage .manage-nav .nav-link:hover,
+.nav-pills.flex-column .nav-link:hover {
     color: #0f172a !important;
     background-color: #e8f0ff;
     transform: none;
 }
 
-.account-manage .manage-nav .nav-link.active {
+.account-manage .manage-nav .nav-link.active,
+.nav-pills.flex-column .nav-link.active {
     color: #ffffff !important;
     background-color: #2563eb;
 }
