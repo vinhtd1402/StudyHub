@@ -30,6 +30,30 @@
 
     </div>
 
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <a class="btn @(string.IsNullOrWhiteSpace(Model.StatusFilter) ? "btn-primary" : "btn-outline-primary")"
+           asp-page="/Admin/Teachers">
+            All
+        </a>
+
+        <a class="btn @(Model.StatusFilter == "Active" ? "btn-primary" : "btn-outline-primary")"
+           asp-page="/Admin/Teachers"
+           asp-route-statusFilter="Active">
+            Active
+        </a>
+
+        <a class="btn @(Model.StatusFilter == "Suspended" ? "btn-primary" : "btn-outline-primary")"
+           asp-page="/Admin/Teachers"
+           asp-route-statusFilter="Suspended">
+            Suspended
+        </a>
+
+        <a class="btn btn-outline-secondary"
+           asp-page="/Admin/Credits">
+            Credit Approvals
+        </a>
+    </div>
+
     @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
     {
         <div class="alert alert-success" role="alert">
@@ -63,6 +87,20 @@
                                     Phone
                                 </th>
 
+                                <th scope="col">
+                                    Wallet
+                                </th>
+
+                                <th scope="col">
+                                    Next Fee
+                                </th>
+
+                                <th scope="col">
+                                    Status
+                                </th>
+
+                                <th scope="col"></th>
+
                             </tr>
 
                         </thead>
@@ -83,6 +121,40 @@
 
                                     <td>
                                         @(string.IsNullOrWhiteSpace(teacher.PhoneNumber) ? "-" : teacher.PhoneNumber)
+                                    </td>
+
+                                    <td>
+                                        @teacher.WalletBalance.ToString("N0") VND
+                                    </td>
+
+                                    <td>
+                                        @(teacher.NextTeacherBillingAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")
+                                    </td>
+
+                                    <td>
+                                        @if (teacher.IsTeacherSuspended)
+                                        {
+                                            <span class="badge bg-danger">Suspended</span>
+                                            <div class="text-muted small">@teacher.TeacherSuspensionReason</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                    </td>
+
+                                    <td class="text-end">
+                                        @if (teacher.IsTeacherSuspended)
+                                        {
+                                            <form method="post"
+                                                  asp-page-handler="Unlock"
+                                                  asp-route-id="@teacher.Id">
+                                                <input type="hidden" asp-for="StatusFilter" />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    Unlock
+                                                </button>
+                                            </form>
+                                        }
                                     </td>
 
                                 </tr>

@@ -54,6 +54,7 @@
                 <th>Title</th>
                 <th>Description</th>
                 <th>Teacher</th>
+                <th>Price</th>
                 <th></th>
             </tr>
         </thead>
@@ -64,11 +65,12 @@
                     <td>@item.Title</td>
                     <td>@item.Description</td>
                     <td>@(string.IsNullOrWhiteSpace(item.Teacher?.FullName) ? item.Teacher?.Email : item.Teacher.FullName)</td>
+                    <td>@item.Price.ToString("N0") VND</td>
 
                     <td>
                         <a asp-page="./Details" asp-route-id="@item.Id">View</a>
 
-                        @if (User.IsInRole("Teacher"))
+                        @if (User.IsInRole("Teacher") && item.TeacherId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
                         {
                             <span> | </span>
                             <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a>

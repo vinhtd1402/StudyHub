@@ -18,6 +18,7 @@ namespace StudyHub.Pages_Courses
         private readonly StudyHub.Data.ApplicationDbContext _context;
         public IList<ApplicationUser> EnrolledStudents { get; set; } = new List<ApplicationUser>();
         public bool IsEnrolled { get; set; }
+        public string? StatusMessage { get; set; }
         public Course Course { get; set; }
 
         public DetailsModel(
@@ -68,15 +69,48 @@ namespace StudyHub.Pages_Courses
 
             if (user == null) return Challenge();
 
+            var course = await _context.Courses
+                .FirstOrDefaultAsync(c => c.Id == id.Value);
+
+            if (course == null)
+            {
+                return NotFound();
+            }
+
             var exists = await _context.Enrollments
                 .AnyAsync(e => e.CourseId == id && e.StudentId == user.Id);
 
             if (!exists)
             {
+                if (user.WalletBalance < course.Price)
+                {
+                    StatusMessage = "Your StudyHub wallet does not have enough balance to enroll in this course.";
+                    await OnGetAsync(id.Value);
+                    return Page();
+                }
+
+                if (course.Price > 0)
+                {
+                    user.WalletBalance -= course.Price;
+
+                    _context.CreditTransactions.Add(new CreditTransaction
+                    {
+                        UserId = user.Id,
+                        Amount = -course.Price,
+                        OrderId = $"ENR{Guid.NewGuid():N}",
+                        RequestId = $"ENR-{Guid.NewGuid():N}",
+                        Provider = "StudyHub",
+                        Status = CreditTransactionStatus.Paid,
+                        Message = $"Enrollment fee for course #{course.Id}: {course.Title}",
+                        PaidAt = DateTime.UtcNow
+                    });
+                }
+
                 var enrollment = new Enrollment
                 {
                     CourseId = id.Value,
                     StudentId = user.Id,
+                    PricePaid = course.Price,
                     EnrolledAt = DateTime.UtcNow
                 };
 

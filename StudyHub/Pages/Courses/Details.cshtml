@@ -15,8 +15,19 @@
         <p class="mb-1">
             <strong>Teacher:</strong> @Model.Course.Teacher.Email
         </p>
+
+        <p class="mb-0">
+            <strong>Price:</strong> @Model.Course.Price.ToString("N0") VND
+        </p>
     </div>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-warning" role="alert">
+        @Model.StatusMessage
+    </div>
+}
 
 <h4>Lessons</h4>
 
@@ -78,7 +89,7 @@ else
                       asp-page-handler="Enroll"
                       asp-route-id="@Model.Course.Id">
                     <button type="submit" class="btn btn-success">
-                        Enroll
+                        Enroll - @Model.Course.Price.ToString("N0") VND
                     </button>
                 </form>
             }

@@ -8,16 +8,21 @@ using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
     public class DeleteModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public DeleteModel(StudyHub.Data.ApplicationDbContext context)
+        public DeleteModel(
+            StudyHub.Data.ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         [BindProperty]
@@ -30,10 +35,22 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
             var course = await _context.Courses.FirstOrDefaultAsync(m => m.Id == id);
 
             if (course is not null)
             {
+                if (course.TeacherId != user.Id)
+                {
+                    return Forbid();
+                }
+
                 Course = course;
 
                 return Page();
@@ -49,9 +66,21 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
             var course = await _context.Courses.FindAsync(id);
             if (course != null)
             {
+                if (course.TeacherId != user.Id)
+                {
+                    return Forbid();
+                }
+
                 Course = course;
                 _context.Courses.Remove(Course);
                 await _context.SaveChangesAsync();

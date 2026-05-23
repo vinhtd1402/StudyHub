@@ -1,4 +1,3 @@
-﻿using System.Security.Claims;
 namespace StudyHub.Models
 {
     public class Enrollment
@@ -10,6 +9,8 @@ namespace StudyHub.Models
 
         public int CourseId { get; set; }
         public Course? Course { get; set; }
+
+        public decimal PricePaid { get; set; }
 
         public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
     }

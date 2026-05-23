@@ -17,6 +17,7 @@ namespace StudyHub.Data
         public DbSet<Lesson> Lessons { get; set; }
         public DbSet<Enrollment> Enrollments { get; set; }
         public DbSet<LessonProgress> LessonProgresses { get; set; }
+        public DbSet<CreditTransaction> CreditTransactions { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -43,6 +44,36 @@ namespace StudyHub.Data
                 .HasOne(q => q.User)
                 .WithMany()
                 .HasForeignKey(q => q.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationUser>()
+                .Property(u => u.WalletBalance)
+                .HasColumnType("decimal(18,0)");
+
+            builder.Entity<ApplicationUser>()
+                .Property(u => u.TeacherSuspensionReason)
+                .HasMaxLength(500);
+
+            builder.Entity<Course>()
+                .Property(c => c.Price)
+                .HasColumnType("decimal(18,0)");
+
+            builder.Entity<Enrollment>()
+                .Property(e => e.PricePaid)
+                .HasColumnType("decimal(18,0)");
+
+            builder.Entity<CreditTransaction>()
+                .HasIndex(t => t.OrderId)
+                .IsUnique();
+
+            builder.Entity<CreditTransaction>()
+                .HasIndex(t => t.RequestId)
+                .IsUnique();
+
+            builder.Entity<CreditTransaction>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

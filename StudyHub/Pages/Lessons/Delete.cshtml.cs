@@ -8,16 +8,21 @@ using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 namespace StudyHub.Pages_Lessons
 {
     [Authorize(Roles = "Teacher")]
     public class DeleteModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public DeleteModel(StudyHub.Data.ApplicationDbContext context)
+        public DeleteModel(
+            StudyHub.Data.ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         [BindProperty]
@@ -30,10 +35,24 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            var lesson = await _context.Lessons.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var lesson = await _context.Lessons
+                .Include(l => l.Course)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (lesson is not null)
             {
+                if (lesson.Course?.TeacherId != user.Id)
+                {
+                    return Forbid();
+                }
+
                 Lesson = lesson;
 
                 return Page();
@@ -49,9 +68,23 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            var lesson = await _context.Lessons.FindAsync(id);
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var lesson = await _context.Lessons
+                .Include(l => l.Course)
+                .FirstOrDefaultAsync(l => l.Id == id);
             if (lesson != null)
             {
+                if (lesson.Course?.TeacherId != user.Id)
+                {
+                    return Forbid();
+                }
+
                 Lesson = lesson;
                 _context.Lessons.Remove(Lesson);
                 await _context.SaveChangesAsync();

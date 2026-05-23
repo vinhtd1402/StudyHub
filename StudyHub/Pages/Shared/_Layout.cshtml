@@ -97,13 +97,34 @@
                             </a>
                         </li>
 
+                        @if (User.IsInRole("Student") || User.IsInRole("Teacher"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-page="/Credits/Index">
+
+                                    My Credit
+
+                                </a>
+                            </li>
+                        }
+
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link"
                                    asp-page="/Admin/Teachers">
 
-                                    Admin
+                                    Teachers
+
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-page="/Admin/Credits">
+
+                                    Credit Approvals
 
                                 </a>
                             </li>

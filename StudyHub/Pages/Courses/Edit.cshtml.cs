@@ -9,16 +9,21 @@ using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
     public class EditModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public EditModel(StudyHub.Data.ApplicationDbContext context)
+        public EditModel(
+            StudyHub.Data.ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         [BindProperty]
@@ -36,8 +41,20 @@ namespace StudyHub.Pages_Courses
             {
                 return NotFound();
             }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended || course.TeacherId != user.Id)
+            {
+                return Forbid();
+            }
+
             Course = course;
-           ViewData["TeacherId"] = new SelectList(_context.Users, "Id", "Id");
             return Page();
         }
 
@@ -50,7 +67,28 @@ namespace StudyHub.Pages_Courses
                 return Page();
             }
 
-            _context.Attach(Course).State = EntityState.Modified;
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == Course.Id);
+
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            if (user.IsTeacherSuspended || course.TeacherId != user.Id)
+            {
+                return Forbid();
+            }
+
+            course.Title = Course.Title;
+            course.Description = Course.Description;
+            course.Price = Course.Price;
 
             try
             {

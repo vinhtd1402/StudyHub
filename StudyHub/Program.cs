@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
 using StudyHub.Models;
+using StudyHub.Services;
 
 namespace StudyHub
 {
@@ -38,6 +39,21 @@ namespace StudyHub
                 options.AddPolicy("StudentOnly", policy => policy.RequireRole(StudentRole));
                 options.AddPolicy("LearningUser", policy => policy.RequireRole(StudentRole, TeacherRole));
             });
+
+            builder.Services.Configure<MomoOptions>(
+                builder.Configuration.GetSection("Momo"));
+
+            builder.Services.Configure<VietQrOptions>(
+                builder.Configuration.GetSection("VietQr"));
+
+            builder.Services.Configure<EmailOptions>(
+                builder.Configuration.GetSection("Email"));
+
+            builder.Services.AddHttpClient<MomoPaymentService>();
+            builder.Services.AddSingleton<VietQrPaymentService>();
+            builder.Services.AddScoped<StudyHubEmailSender>();
+            builder.Services.AddScoped<TeacherBillingService>();
+            builder.Services.AddHostedService<TeacherBillingBackgroundService>();
 
             builder.Services.AddRazorPages();
 
@@ -123,7 +139,8 @@ namespace StudyHub
                     UserName = email,
                     Email = email,
                     FullName = fullName,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 var createResult = await userManager.CreateAsync(user, password);
@@ -144,6 +161,14 @@ namespace StudyHub
                     var errors = string.Join(", ", roleResult.Errors.Select(error => error.Description));
                     throw new InvalidOperationException($"Could not add '{email}' to '{role}' role: {errors}");
                 }
+            }
+
+            if (role == TeacherRole &&
+                (user.TeacherBillingStartsAt == null || user.NextTeacherBillingAt == null))
+            {
+                user.TeacherBillingStartsAt ??= user.CreatedAt.AddDays(30);
+                user.NextTeacherBillingAt ??= user.TeacherBillingStartsAt;
+                await userManager.UpdateAsync(user);
             }
         }
     }

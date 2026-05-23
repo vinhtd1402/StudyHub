@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudyHub.Data;
 
@@ -11,9 +12,11 @@ using StudyHub.Data;
 namespace StudyHub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523175208_AddWalletCredits")]
+    partial class AddWalletCredits
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,9 +231,6 @@ namespace StudyHub.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -242,20 +242,11 @@ namespace StudyHub.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsTeacherSuspended")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastTeacherBillingNoticeAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTime?>("NextTeacherBillingAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -276,16 +267,6 @@ namespace StudyHub.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("TeacherBillingStartsAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("TeacherSuspendedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("TeacherSuspensionReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
@@ -322,9 +303,6 @@ namespace StudyHub.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,0)");
 
                     b.Property<string>("TeacherId")
                         .IsRequired()
@@ -423,9 +401,6 @@ namespace StudyHub.Migrations
 
                     b.Property<DateTime>("EnrolledAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("PricePaid")
-                        .HasColumnType("decimal(18,0)");
 
                     b.Property<string>("StudentId")
                         .IsRequired()

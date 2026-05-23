@@ -36,9 +36,20 @@ namespace StudyHub.Pages_Lessons
                 .Include(l => l.Course)
                 .AsQueryable();
 
-            if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+            if (User.IsInRole("Admin"))
             {
                 CourseOptions = await BuildCourseOptionsAsync(_context.Courses);
+            }
+            else if (User.IsInRole("Teacher"))
+            {
+                var userId = _userManager.GetUserId(User);
+
+                lessonsQuery = lessonsQuery.Where(l =>
+                    l.Course != null &&
+                    l.Course.TeacherId == userId);
+
+                CourseOptions = await BuildCourseOptionsAsync(
+                    _context.Courses.Where(c => c.TeacherId == userId));
             }
             else
             {

@@ -48,7 +48,16 @@ namespace StudyHub.Pages_Lessons
 
             Lesson = lesson;
 
-            if (!User.IsInRole("Teacher") && !User.IsInRole("Admin"))
+            if (User.IsInRole("Teacher"))
+            {
+                var userId = _userManager.GetUserId(User);
+
+                if (lesson.Course?.TeacherId != userId)
+                {
+                    return Forbid();
+                }
+            }
+            else if (!User.IsInRole("Admin"))
             {
                 var userId = _userManager.GetUserId(User);
 

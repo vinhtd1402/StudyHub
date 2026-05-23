@@ -10,16 +10,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 namespace StudyHub.Pages_Lessons
 {
     [Authorize(Roles = "Teacher")]
     public class EditModel : PageModel
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public EditModel(StudyHub.Data.ApplicationDbContext context)
+        public EditModel(
+            StudyHub.Data.ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         [BindProperty]
@@ -32,13 +37,33 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            var lesson =  await _context.Lessons.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended)
+            {
+                return Forbid();
+            }
+
+            var lesson =  await _context.Lessons
+                .Include(l => l.Course)
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (lesson == null)
             {
                 return NotFound();
             }
+
+            if (lesson.Course?.TeacherId != user.Id)
+            {
+                return Forbid();
+            }
+
             Lesson = lesson;
-           ViewData["CourseId"] = new SelectList(_context.Courses, "Id", "Title");
+            await LoadCourseOptionsAsync(user.Id);
             return Page();
         }
 
@@ -48,10 +73,53 @@ namespace StudyHub.Pages_Lessons
         {
             if (!ModelState.IsValid)
             {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await LoadCourseOptionsAsync(currentUser.Id);
+                }
+
                 return Page();
             }
 
-            _context.Attach(Lesson).State = EntityState.Modified;
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended)
+            {
+                return Forbid();
+            }
+
+            var existingLesson = await _context.Lessons
+                .Include(l => l.Course)
+                .FirstOrDefaultAsync(l => l.Id == Lesson.Id);
+
+            if (existingLesson == null)
+            {
+                return NotFound();
+            }
+
+            if (existingLesson.Course?.TeacherId != user.Id)
+            {
+                return Forbid();
+            }
+
+            var ownsNewCourse = await _context.Courses
+                .AnyAsync(c => c.Id == Lesson.CourseId && c.TeacherId == user.Id);
+
+            if (!ownsNewCourse)
+            {
+                return Forbid();
+            }
+
+            existingLesson.Title = Lesson.Title;
+            existingLesson.Content = Lesson.Content;
+            existingLesson.YoutubeUrl = Lesson.YoutubeUrl;
+            existingLesson.CourseId = Lesson.CourseId;
 
             try
             {
@@ -75,6 +143,16 @@ namespace StudyHub.Pages_Lessons
         private bool LessonExists(int id)
         {
             return _context.Lessons.Any(e => e.Id == id);
+        }
+
+        private async Task LoadCourseOptionsAsync(string teacherId)
+        {
+            var courses = await _context.Courses
+                .Where(c => c.TeacherId == teacherId)
+                .OrderBy(c => c.Title)
+                .ToListAsync();
+
+            ViewData["CourseId"] = new SelectList(courses, "Id", "Title", Lesson.CourseId);
         }
     }
 }

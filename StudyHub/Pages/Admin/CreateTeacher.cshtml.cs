@@ -72,7 +72,10 @@ namespace StudyHub.Pages.Admin
                 UserName = Input.Email,
                 Email = Input.Email,
                 FullName = Input.FullName,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow,
+                TeacherBillingStartsAt = DateTime.UtcNow.AddDays(30),
+                NextTeacherBillingAt = DateTime.UtcNow.AddDays(30)
             };
 
             var createResult = await _userManager.CreateAsync(teacher, Input.Password);

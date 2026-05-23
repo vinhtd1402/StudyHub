@@ -1,0 +1,163 @@
+@page
+@model StudyHub.Pages.Credits.IndexModel
+
+@{
+    ViewData["Title"] = "My Credit";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h1 class="fw-bold mb-1">
+                My Credit
+            </h1>
+
+            <p class="text-muted mb-0">
+                Top up your StudyHub wallet using VietQR.
+            </p>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body px-4 py-3">
+                <div class="text-muted small">
+                    Wallet balance
+                </div>
+                <div class="h4 fw-bold mb-0">
+                    @Model.WalletBalance.ToString("N0") VND
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="alert alert-info" role="alert">
+            @Model.StatusMessage
+        </div>
+    }
+
+    @if (!Model.IsVietQrConfigured)
+    {
+        <div class="alert alert-warning" role="alert">
+            VietQR is not configured yet. Add BankId, AccountNo, and Template before testing top-up.
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <div class="col-lg-5">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body">
+
+                    <h2 class="h4 fw-bold mb-3">
+                        Top up with VietQR
+                    </h2>
+
+                    <p class="text-muted small mb-3">
+                        MBBank account @Model.VietQrAccountNo. The QR code includes the amount and order code for reconciliation.
+                    </p>
+
+                    <form method="post" asp-page-handler="VietQrTopUp">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger mb-3"
+                             role="alert">
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Amount"
+                                   class="form-control"
+                                   min="1000"
+                                   step="1000"
+                                   placeholder="Amount" />
+                            <label asp-for="Input.Amount"></label>
+                            <span asp-validation-for="Input.Amount"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Generate VietQR
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-lg-7">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body">
+
+                    <h2 class="h4 fw-bold mb-3">
+                        Recent transactions
+                    </h2>
+
+                    @if (Model.Transactions.Any())
+                    {
+                        <div class="table-responsive">
+
+                            <table class="table align-middle mb-0">
+
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Method</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var item in Model.Transactions)
+                                    {
+                                        <tr>
+                                            <td>@item.OrderId</td>
+                                            <td>@item.Provider</td>
+                                            <td>@item.Amount.ToString("N0") VND</td>
+                                            <td>
+                                                <span class="badge @(item.Status == CreditTransactionStatus.Paid ? "bg-success" : item.Status == CreditTransactionStatus.Failed ? "bg-danger" : "bg-secondary")">
+                                                    @item.Status
+                                                </span>
+                                            </td>
+                                            <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+
+                            </table>
+
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">
+                            No wallet transactions yet.
+                        </p>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
