@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model StudyHub.Pages.Quizzes.TakeModel
 
 @{
@@ -7,107 +7,67 @@
 
 <div class="container mt-4">
 
-    <h2>@Model.Quiz.Title</h2>
-
-    @if (ViewData["Score"] != null)
-    {
-        <div class="alert alert-success">
-
-            <h4>
-                Result:
-                @ViewData["Score"] / @ViewData["Total"]
-            </h4>
-
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">@Model.Quiz.Title</h1>
+            <p class="text-muted mb-0">
+                Passing score: @Model.Quiz.PassingScorePercent%
+            </p>
         </div>
-    }
+
+        <a asp-page="/Quizzes/History" class="btn btn-outline-secondary">
+            Attempt History
+        </a>
+    </div>
 
     <form method="post">
 
-        @foreach (var q in Model.Quiz.Questions)
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 p-3 bg-white rounded shadow-sm">
+            <span class="text-muted">
+                @Model.Quiz.Questions.Count question(s)
+            </span>
+
+            <button type="submit" class="btn btn-primary">
+                Submit Quiz
+            </button>
+        </div>
+
+        @foreach (var q in Model.Quiz.Questions.OrderBy(q => q.Id))
         {
-            <div class="card mb-4 p-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">@q.Content</h2>
 
-                <h5>@q.Content</h5>
+                    @foreach (var option in new[] {
+                        new { Value = "A", Text = q.OptionA },
+                        new { Value = "B", Text = q.OptionB },
+                        new { Value = "C", Text = q.OptionC },
+                        new { Value = "D", Text = q.OptionD }
+                    })
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   id="q@q.Id@option.Value"
+                                   name="UserAnswers[@q.Id]"
+                                   value="@option.Value" />
 
-                <div class="form-check">
-
-                    <input class="form-check-input"
-                           type="radio"
-                           name="UserAnswers[@q.Id]"
-                           value="A" />
-
-                    <label class="form-check-label">
-                        @q.OptionA
-                    </label>
-
+                            <label class="form-check-label" for="q@q.Id@option.Value">
+                                <span class="fw-semibold">@option.Value.</span> @option.Text
+                            </label>
+                        </div>
+                    }
                 </div>
-
-                <div class="form-check">
-
-                    <input class="form-check-input"
-                           type="radio"
-                           name="UserAnswers[@q.Id]"
-                           value="B" />
-
-                    <label class="form-check-label">
-                        @q.OptionB
-                    </label>
-
-                </div>
-
-                <div class="form-check">
-
-                    <input class="form-check-input"
-                           type="radio"
-                           name="UserAnswers[@q.Id]"
-                           value="C" />
-
-                    <label class="form-check-label">
-                        @q.OptionC
-                    </label>
-
-                </div>
-
-                <div class="form-check">
-
-                    <input class="form-check-input"
-                           type="radio"
-                           name="UserAnswers[@q.Id]"
-                           value="D" />
-
-                    <label class="form-check-label">
-                        @q.OptionD
-                    </label>
-
-                </div>
-
             </div>
         }
 
-        <button type="submit"
-                class="btn btn-primary">
-
-            Submit Quiz
-
-        </button>
-        @if (Model.IsSubmitted)
-        {
-            <div class="mt-4 d-flex gap-2">
-
-                <a class="btn btn-warning"
-                       asp-page="/Quizzes/Take"
-                       asp-route-id="@Model.Quiz.Id">
-                    🔁 Retry
-                </a>
-
-                <a class="btn btn-success"
-                       asp-page="/Index">
-                    🏠 Finish
-                </a>
-
+        <div class="sticky-bottom bg-white border-top py-3 mt-4">
+            <div class="container px-0 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                    Submit Quiz
+                </button>
             </div>
-        }
-
+        </div>
     </form>
 
 </div>

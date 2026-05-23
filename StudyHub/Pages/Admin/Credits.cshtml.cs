@@ -1,25 +1,19 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
+using StudyHub.Services;
 
 namespace StudyHub.Pages.Admin
 {
     [Authorize(Policy = "AdminOnly")]
     public class CreditsModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly WalletService _walletService;
 
-        public CreditsModel(
-            ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+        public CreditsModel(WalletService walletService)
         {
-            _context = context;
-            _userManager = userManager;
+            _walletService = walletService;
         }
 
         public IList<CreditTransaction> Transactions { get; set; } = new List<CreditTransaction>();
@@ -35,88 +29,21 @@ namespace StudyHub.Pages.Admin
 
         public async Task OnGetAsync()
         {
-            var query = _context.CreditTransactions
-                .Include(t => t.User)
-                .Where(t => t.Provider == "VietQR")
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(StatusFilter))
-            {
-                query = query.Where(t => t.Status == StatusFilter);
-            }
-
-            var transactions = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-
-            if (!string.IsNullOrWhiteSpace(RoleFilter))
-            {
-                var filtered = new List<CreditTransaction>();
-
-                foreach (var transaction in transactions)
-                {
-                    if (transaction.User != null &&
-                        await _userManager.IsInRoleAsync(transaction.User, RoleFilter))
-                    {
-                        filtered.Add(transaction);
-                    }
-                }
-
-                transactions = filtered;
-            }
-
-            Transactions = transactions;
+            Transactions = await _walletService.GetVietQrTransactionsForAdminAsync(
+                RoleFilter,
+                StatusFilter);
         }
 
         public async Task<IActionResult> OnPostApproveAsync(int id)
         {
-            var transaction = await _context.CreditTransactions
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t =>
-                    t.Id == id &&
-                    t.Provider == "VietQR");
-
-            if (transaction == null || transaction.User == null)
-            {
-                return NotFound();
-            }
-
-            if (transaction.Status == CreditTransactionStatus.Paid)
-            {
-                StatusMessage = "This transaction was already approved.";
-                return RedirectToPage(new { RoleFilter, StatusFilter });
-            }
-
-            transaction.Status = CreditTransactionStatus.Paid;
-            transaction.PaidAt = DateTime.UtcNow;
-            transaction.Message = "Approved by admin.";
-            transaction.User.WalletBalance += transaction.Amount;
-
-            await _context.SaveChangesAsync();
-
-            StatusMessage = $"Approved {transaction.Amount:N0} VND for {transaction.User.Email}.";
+            StatusMessage = await _walletService.ApproveVietQrTransactionAsync(id);
             return RedirectToPage(new { RoleFilter, StatusFilter });
         }
 
         public async Task<IActionResult> OnPostRejectAsync(int id)
         {
-            var transaction = await _context.CreditTransactions
-                .FirstOrDefaultAsync(t =>
-                    t.Id == id &&
-                    t.Provider == "VietQR");
-
-            if (transaction == null)
-            {
-                return NotFound();
-            }
-
-            if (transaction.Status == CreditTransactionStatus.Pending)
-            {
-                transaction.Status = CreditTransactionStatus.Failed;
-                transaction.Message = "Rejected by admin.";
-                await _context.SaveChangesAsync();
-                StatusMessage = "Transaction rejected.";
-            }
+            await _walletService.RejectVietQrTransactionAsync(id);
+            StatusMessage = "Transaction rejected.";
 
             return RedirectToPage(new { RoleFilter, StatusFilter });
         }

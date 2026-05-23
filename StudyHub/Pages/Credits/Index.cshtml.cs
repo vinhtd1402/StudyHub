@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using StudyHub.Services;
 
@@ -13,18 +11,18 @@ namespace StudyHub.Pages.Credits
     [Authorize(Roles = "Student,Teacher")]
     public class IndexModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly VietQrPaymentService _vietQrPaymentService;
+        private readonly WalletService _walletService;
 
         public IndexModel(
-            ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            VietQrPaymentService vietQrPaymentService)
+            VietQrPaymentService vietQrPaymentService,
+            WalletService walletService)
         {
-            _context = context;
             _userManager = userManager;
             _vietQrPaymentService = vietQrPaymentService;
+            _walletService = walletService;
         }
 
         public decimal WalletBalance { get; set; }
@@ -82,37 +80,16 @@ namespace StudyHub.Pages.Credits
                 return Page();
             }
 
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var orderId = $"VQR{timestamp}";
-            var requestId = $"VQR-{timestamp}-{Guid.NewGuid():N}";
-            var qrImageUrl = _vietQrPaymentService.CreateQrImageUrl(Input.Amount, orderId);
+            var transaction = await _walletService.CreateVietQrTopUpAsync(user, Input.Amount);
 
-            var transaction = new CreditTransaction
-            {
-                UserId = user.Id,
-                Amount = Input.Amount,
-                OrderId = orderId,
-                RequestId = requestId,
-                Provider = "VietQR",
-                PayUrl = qrImageUrl,
-                Message = $"Transfer content: {orderId}"
-            };
-
-            _context.CreditTransactions.Add(transaction);
-            await _context.SaveChangesAsync();
-
-            return RedirectToPage("/Credits/VietQr", new { orderId });
+            return RedirectToPage("/Credits/VietQr", new { transaction.OrderId });
         }
 
         private async Task LoadWalletAsync(ApplicationUser user)
         {
             WalletBalance = user.WalletBalance;
 
-            Transactions = await _context.CreditTransactions
-                .Where(t => t.UserId == user.Id)
-                .OrderByDescending(t => t.CreatedAt)
-                .Take(10)
-                .ToListAsync();
+            Transactions = await _walletService.GetRecentTransactionsAsync(user.Id);
         }
     }
 }

@@ -18,6 +18,8 @@ namespace StudyHub.Models
 
         public int QuestionCount { get; set; }
 
+        public int PassingScorePercent { get; set; } = 70;
+
         public ICollection<Question> Questions { get; set; }
             = new List<Question>();
     }

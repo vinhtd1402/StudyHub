@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StudyHub.Data;
+using StudyHub.Data.Repositories;
 using StudyHub.Models;
 using StudyHub.Services;
 
@@ -40,17 +41,17 @@ namespace StudyHub
                 options.AddPolicy("LearningUser", policy => policy.RequireRole(StudentRole, TeacherRole));
             });
 
-            builder.Services.Configure<MomoOptions>(
-                builder.Configuration.GetSection("Momo"));
-
             builder.Services.Configure<VietQrOptions>(
                 builder.Configuration.GetSection("VietQr"));
 
             builder.Services.Configure<EmailOptions>(
                 builder.Configuration.GetSection("Email"));
 
-            builder.Services.AddHttpClient<MomoPaymentService>();
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddSingleton<VietQrPaymentService>();
+            builder.Services.AddScoped<AccessControlService>();
+            builder.Services.AddScoped<WalletService>();
+            builder.Services.AddScoped<QuizService>();
             builder.Services.AddScoped<StudyHubEmailSender>();
             builder.Services.AddScoped<TeacherBillingService>();
             builder.Services.AddHostedService<TeacherBillingBackgroundService>();

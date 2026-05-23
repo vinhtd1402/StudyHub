@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using StudyHub.Services;
 namespace StudyHub.Pages_Lessons
 {
     [Authorize(Roles = "Teacher")]
@@ -18,13 +19,16 @@ namespace StudyHub.Pages_Lessons
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccessControlService _accessControlService;
 
         public EditModel(
             StudyHub.Data.ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            AccessControlService accessControlService)
         {
             _context = context;
             _userManager = userManager;
+            _accessControlService = accessControlService;
         }
 
         [BindProperty]
@@ -57,7 +61,7 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            if (lesson.Course?.TeacherId != user.Id)
+            if (!await _accessControlService.TeacherOwnsLessonAsync(user.Id, lesson.Id))
             {
                 return Forbid();
             }
@@ -103,15 +107,12 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            if (existingLesson.Course?.TeacherId != user.Id)
+            if (!await _accessControlService.TeacherOwnsLessonAsync(user.Id, existingLesson.Id))
             {
                 return Forbid();
             }
 
-            var ownsNewCourse = await _context.Courses
-                .AnyAsync(c => c.Id == Lesson.CourseId && c.TeacherId == user.Id);
-
-            if (!ownsNewCourse)
+            if (!await _accessControlService.TeacherOwnsCourseAsync(user.Id, Lesson.CourseId))
             {
                 return Forbid();
             }

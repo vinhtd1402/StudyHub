@@ -1,39 +1,53 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
+using StudyHub.Services;
 
 namespace StudyHub.Pages.Quizzes
 {
+    [Authorize(Roles = "Teacher,Admin")]
     public class ResultsModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly QuizService _quizService;
 
-        public ResultsModel(ApplicationDbContext context)
+        public ResultsModel(
+            UserManager<ApplicationUser> userManager,
+            QuizService quizService)
         {
-            _context = context;
+            _userManager = userManager;
+            _quizService = quizService;
         }
 
         public Quiz Quiz { get; set; } = default!;
-
-        public List<QuizAttempt> Attempts { get; set; } = new();
+        public IList<QuizAttempt> Attempts { get; set; } = new List<QuizAttempt>();
 
         public async Task<IActionResult> OnGetAsync(int quizId)
         {
-            Quiz = await _context.Quizzes
-                .FirstOrDefaultAsync(q => q.Id == quizId);
+            var user = await _userManager.GetUserAsync(User);
 
-            if (Quiz == null)
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var quiz = await _quizService.GetQuizAsync(quizId);
+
+            if (quiz == null)
             {
                 return NotFound();
             }
 
-            Attempts = await _context.QuizAttempts
-                .Include(a => a.User)
-                .Where(a => a.QuizId == quizId)
-                .OrderByDescending(a => a.TakenAt)
-                .ToListAsync();
+            if (User.IsInRole("Teacher") &&
+                !await _quizService.TeacherOwnsQuizAsync(user.Id, quizId))
+            {
+                return Forbid();
+            }
+
+            Quiz = quiz;
+            Attempts = await _quizService.GetQuizResultsAsync(quizId);
 
             return Page();
         }

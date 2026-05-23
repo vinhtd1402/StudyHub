@@ -1,40 +1,58 @@
-﻿@page
+@page
 @model StudyHub.Pages.Quizzes.ResultsModel
 
 @{
     ViewData["Title"] = "Quiz Results";
 }
 
-<h2>@Model.Quiz.Title - Results</h2>
+<div class="container mt-4">
 
-@if (!Model.Attempts.Any())
-{
-    <div class="alert alert-warning">
-        No student has taken this quiz yet.
-    </div>
-}
-else
-{
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Score</th>
-                <th>Total Questions</th>
-                <th>Taken At</th>
-            </tr>
-        </thead>
+    <h1 class="h3 fw-bold mb-1">@Model.Quiz.Title - Results</h1>
+    <p class="text-muted mb-4">Passing score: @Model.Quiz.PassingScorePercent%</p>
 
-        <tbody>
-            @foreach (var item in Model.Attempts)
-            {
-                <tr>
-                    <td>@item.User?.UserName</td>
-                    <td>@item.Score</td>
-                    <td>@item.TotalQuestions</td>
-                    <td>@item.TakenAt</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    @if (!Model.Attempts.Any())
+    {
+        <div class="alert alert-warning">
+            No student has taken this quiz yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Score</th>
+                        <th>Result</th>
+                        <th>Taken At</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Attempts)
+                    {
+                        <tr>
+                            <td>@(string.IsNullOrWhiteSpace(item.User?.FullName) ? item.User?.Email : item.User.FullName)</td>
+                            <td>@item.Score / @item.TotalQuestions (@item.Percentage.ToString("N2")%)</td>
+                            <td>
+                                <span class="badge @(item.IsPassed ? "bg-success" : "bg-danger")">
+                                    @(item.IsPassed ? "Passed" : "Failed")
+                                </span>
+                            </td>
+                            <td>@item.TakenAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <a asp-page="/Quizzes/Review"
+                                   asp-route-attemptId="@item.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Review
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>

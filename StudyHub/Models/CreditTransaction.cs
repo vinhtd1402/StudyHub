@@ -24,12 +24,10 @@ namespace StudyHub.Models
         public string RequestId { get; set; } = string.Empty;
 
         [StringLength(50)]
-        public string Provider { get; set; } = "MoMo";
+        public string Provider { get; set; } = "VietQR";
 
         [StringLength(30)]
         public string Status { get; set; } = CreditTransactionStatus.Pending;
-
-        public long? MomoTransactionId { get; set; }
 
         public int? ResultCode { get; set; }
 

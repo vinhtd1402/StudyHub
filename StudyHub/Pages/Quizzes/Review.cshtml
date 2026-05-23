@@ -1,0 +1,98 @@
+@page
+@model StudyHub.Pages.Quizzes.ReviewModel
+
+@{
+    ViewData["Title"] = "Quiz Review";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">@Model.Attempt.Quiz.Title</h1>
+            <p class="text-muted mb-0">
+                @Model.Attempt.Score / @Model.Attempt.TotalQuestions
+                (@Model.Attempt.Percentage.ToString("N2")%)
+            </p>
+        </div>
+
+        <span class="badge fs-6 @(Model.Attempt.IsPassed ? "bg-success" : "bg-danger")">
+            @(Model.Attempt.IsPassed ? "Passed" : "Failed")
+        </span>
+    </div>
+
+    @foreach (var answer in Model.Attempt.Answers.OrderBy(a => a.Id))
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between gap-3 mb-3">
+                    <h2 class="h5 mb-0">@answer.QuestionContent</h2>
+                    <span class="badge @(answer.IsCorrect ? "bg-success" : "bg-danger")">
+                        @(answer.IsCorrect ? "Correct" : "Incorrect")
+                    </span>
+                </div>
+
+                @foreach (var option in new[] {
+                    new { Value = "A", Text = answer.OptionA },
+                    new { Value = "B", Text = answer.OptionB },
+                    new { Value = "C", Text = answer.OptionC },
+                    new { Value = "D", Text = answer.OptionD }
+                })
+                {
+                    var isSelected = answer.SelectedAnswer == option.Value;
+                    var isCorrect = answer.CorrectAnswer == option.Value;
+                    var rowClass = isCorrect
+                        ? "list-group-item-success"
+                        : isSelected
+                            ? "list-group-item-danger"
+                            : string.Empty;
+
+                    <div class="list-group-item @rowClass">
+                        <span class="fw-semibold">@option.Value.</span> @option.Text
+
+                        @if (isCorrect)
+                        {
+                            <span class="badge bg-success ms-2">Correct answer</span>
+                        }
+
+                        @if (isSelected)
+                        {
+                            <span class="badge bg-primary ms-2">Your answer</span>
+                        }
+                    </div>
+                }
+
+                @if (string.IsNullOrWhiteSpace(answer.SelectedAnswer))
+                {
+                    <div class="text-muted small mt-2">No answer selected.</div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-4">
+        @if (User.IsInRole("Student") || User.IsInRole("Admin"))
+        {
+            <a asp-page="/Quizzes/Take"
+               asp-route-id="@Model.Attempt.QuizId"
+               class="btn btn-primary">
+                Retry
+            </a>
+
+            <a asp-page="/Quizzes/History"
+               class="btn btn-outline-secondary">
+                History
+            </a>
+        }
+
+        @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+        {
+            <a asp-page="/Quizzes/Results"
+               asp-route-quizId="@Model.Attempt.QuizId"
+               class="btn btn-outline-secondary">
+                Results
+            </a>
+        }
+    </div>
+
+</div>

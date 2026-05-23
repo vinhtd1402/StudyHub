@@ -10,6 +10,7 @@ using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using StudyHub.Services;
 
 namespace StudyHub.Pages_Lessons
 {
@@ -18,13 +19,16 @@ namespace StudyHub.Pages_Lessons
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccessControlService _accessControlService;
 
         public CreateModel(
             StudyHub.Data.ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            AccessControlService accessControlService)
         {
             _context = context;
             _userManager = userManager;
+            _accessControlService = accessControlService;
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -74,10 +78,7 @@ namespace StudyHub.Pages_Lessons
                 return Forbid();
             }
 
-            var ownsCourse = await _context.Courses
-                .AnyAsync(c => c.Id == Lesson.CourseId && c.TeacherId == user.Id);
-
-            if (!ownsCourse)
+            if (!await _accessControlService.TeacherOwnsCourseAsync(user.Id, Lesson.CourseId))
             {
                 return Forbid();
             }

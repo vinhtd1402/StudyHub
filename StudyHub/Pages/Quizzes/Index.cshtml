@@ -1,46 +1,74 @@
-﻿@page
+@page
 @model StudyHub.Pages.Quizzes.IndexModel
 
-<h2>Quiz List</h2>
-
-@if (User.IsInRole("Teacher"))
-{
-    <a asp-page="/Quizzes/Create" class="btn btn-primary">
-        + Create Quiz
-    </a>
+@{
+    ViewData["Title"] = "Quizzes";
 }
 
-<br />
-<br />
+<div class="container mt-4">
 
-@if (!Model.Quizzes.Any())
-{
-    <p>No quizzes found</p>
-}
-else
-{
-    <table border="1" cellpadding="8">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Lesson</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Quizzes</h1>
+            <p class="text-muted mb-0">Practice quizzes available to your account.</p>
+        </div>
 
-        <tbody>
-            @foreach (var q in Model.Quizzes)
-            {
-                <tr>
-                    <td>@q.Title</td>
-                    <td>@q.Lesson?.Title</td>
-                    <td>
-                        <a asp-page="/Quizzes/Take" asp-route-id="@q.Id">
-                            Take Quiz
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+        @if (User.IsInRole("Student"))
+        {
+            <a asp-page="/Quizzes/History" class="btn btn-outline-primary">
+                Attempt History
+            </a>
+        }
+    </div>
+
+    @if (!Model.Quizzes.Any())
+    {
+        <div class="alert alert-info">
+            No quizzes found.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Lesson</th>
+                        <th>Passing Score</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var quiz in Model.Quizzes)
+                    {
+                        <tr>
+                            <td>@quiz.Title</td>
+                            <td>@quiz.Lesson?.Title</td>
+                            <td>@quiz.PassingScorePercent%</td>
+                            <td class="text-end">
+                                @if (User.IsInRole("Student"))
+                                {
+                                    <a asp-page="/Quizzes/Take"
+                                       asp-route-id="@quiz.Id"
+                                       class="btn btn-sm btn-primary">
+                                        Take Quiz
+                                    </a>
+                                }
+                                else if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+                                {
+                                    <a asp-page="/Quizzes/Results"
+                                       asp-route-quizId="@quiz.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Results
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>

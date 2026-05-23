@@ -13,6 +13,7 @@ namespace StudyHub.Data
         public DbSet<Quiz> Quizzes { get; set; }
         public DbSet<Question> Questions { get; set; }
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
+        public DbSet<QuizAttemptAnswer> QuizAttemptAnswers { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
         public DbSet<Enrollment> Enrollments { get; set; }
@@ -44,6 +45,22 @@ namespace StudyHub.Data
                 .HasOne(q => q.User)
                 .WithMany()
                 .HasForeignKey(q => q.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<QuizAttempt>()
+                .Property(q => q.Percentage)
+                .HasColumnType("decimal(5,2)");
+
+            builder.Entity<QuizAttemptAnswer>()
+                .HasOne(a => a.QuizAttempt)
+                .WithMany(a => a.Answers)
+                .HasForeignKey(a => a.QuizAttemptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<QuizAttemptAnswer>()
+                .HasOne(a => a.Question)
+                .WithMany()
+                .HasForeignKey(a => a.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<ApplicationUser>()

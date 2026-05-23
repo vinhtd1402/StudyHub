@@ -9,6 +9,7 @@ using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using StudyHub.Services;
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
@@ -16,13 +17,16 @@ namespace StudyHub.Pages_Courses
     {
         private readonly StudyHub.Data.ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccessControlService _accessControlService;
 
         public DeleteModel(
             StudyHub.Data.ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            AccessControlService accessControlService)
         {
             _context = context;
             _userManager = userManager;
+            _accessControlService = accessControlService;
         }
 
         [BindProperty]
@@ -46,7 +50,7 @@ namespace StudyHub.Pages_Courses
 
             if (course is not null)
             {
-                if (course.TeacherId != user.Id)
+                if (!await _accessControlService.TeacherOwnsCourseAsync(user.Id, course.Id))
                 {
                     return Forbid();
                 }
@@ -76,7 +80,7 @@ namespace StudyHub.Pages_Courses
             var course = await _context.Courses.FindAsync(id);
             if (course != null)
             {
-                if (course.TeacherId != user.Id)
+                if (!await _accessControlService.TeacherOwnsCourseAsync(user.Id, course.Id))
                 {
                     return Forbid();
                 }

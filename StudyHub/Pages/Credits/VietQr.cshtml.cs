@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using StudyHub.Services;
 
@@ -12,18 +10,18 @@ namespace StudyHub.Pages.Credits
     [Authorize(Roles = "Student,Teacher")]
     public class VietQrModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly VietQrPaymentService _vietQrPaymentService;
+        private readonly WalletService _walletService;
 
         public VietQrModel(
-            ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            VietQrPaymentService vietQrPaymentService)
+            VietQrPaymentService vietQrPaymentService,
+            WalletService walletService)
         {
-            _context = context;
             _userManager = userManager;
             _vietQrPaymentService = vietQrPaymentService;
+            _walletService = walletService;
         }
 
         public CreditTransaction Transaction { get; set; } = new();
@@ -39,11 +37,7 @@ namespace StudyHub.Pages.Credits
                 return Challenge();
             }
 
-            var transaction = await _context.CreditTransactions
-                .FirstOrDefaultAsync(t =>
-                    t.UserId == user.Id &&
-                    t.OrderId == orderId &&
-                    t.Provider == "VietQR");
+            var transaction = await _walletService.GetUserVietQrTransactionAsync(user.Id, orderId);
 
             if (transaction == null)
             {

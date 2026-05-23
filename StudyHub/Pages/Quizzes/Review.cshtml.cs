@@ -7,13 +7,13 @@ using StudyHub.Services;
 
 namespace StudyHub.Pages.Quizzes
 {
-    [Authorize(Roles = "Student,Admin")]
-    public class HistoryModel : PageModel
+    [Authorize]
+    public class ReviewModel : PageModel
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly QuizService _quizService;
 
-        public HistoryModel(
+        public ReviewModel(
             UserManager<ApplicationUser> userManager,
             QuizService quizService)
         {
@@ -21,9 +21,9 @@ namespace StudyHub.Pages.Quizzes
             _quizService = quizService;
         }
 
-        public IList<QuizAttempt> History { get; set; } = new List<QuizAttempt>();
+        public QuizAttempt Attempt { get; set; } = default!;
 
-        public async Task<IActionResult> OnGetAsync()
+        public async Task<IActionResult> OnGetAsync(int attemptId)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -32,7 +32,25 @@ namespace StudyHub.Pages.Quizzes
                 return Challenge();
             }
 
-            History = await _quizService.GetStudentHistoryAsync(user.Id);
+            var attempt = await _quizService.GetAttemptReviewAsync(attemptId);
+
+            if (attempt == null)
+            {
+                return NotFound();
+            }
+
+            var canReview =
+                User.IsInRole("Admin") ||
+                attempt.UserId == user.Id ||
+                (User.IsInRole("Teacher") &&
+                    await _quizService.TeacherOwnsQuizAsync(user.Id, attempt.QuizId));
+
+            if (!canReview)
+            {
+                return Forbid();
+            }
+
+            Attempt = attempt;
             return Page();
         }
     }

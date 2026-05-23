@@ -24,6 +24,20 @@
         <div class="mb-3">
 
             <label class="form-label">
+                Passing Score (%)
+            </label>
+
+            <input asp-for="Quiz.PassingScorePercent"
+                   type="number"
+                   min="0"
+                   max="100"
+                   class="form-control" />
+
+        </div>
+
+        <div class="mb-3">
+
+            <label class="form-label">
                 Number Of Questions
             </label>
 

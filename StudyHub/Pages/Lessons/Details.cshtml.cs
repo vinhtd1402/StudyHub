@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using StudyHub.Models;
+using StudyHub.Services;
 namespace StudyHub.Pages_Lessons
 {
     public class DetailsModel : PageModel
@@ -18,13 +19,16 @@ namespace StudyHub.Pages_Lessons
         public Lesson? PreviousLesson { get; set; }
         public Lesson? NextLesson { get; set; }
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccessControlService _accessControlService;
 
         public DetailsModel(
-    ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager)
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            AccessControlService accessControlService)
         {
             _context = context;
             _userManager = userManager;
+            _accessControlService = accessControlService;
         }
 
         public Lesson Lesson { get; set; } = default!;
@@ -52,7 +56,8 @@ namespace StudyHub.Pages_Lessons
             {
                 var userId = _userManager.GetUserId(User);
 
-                if (lesson.Course?.TeacherId != userId)
+                if (userId == null ||
+                    !await _accessControlService.TeacherOwnsLessonAsync(userId, lesson.Id))
                 {
                     return Forbid();
                 }
@@ -61,12 +66,8 @@ namespace StudyHub.Pages_Lessons
             {
                 var userId = _userManager.GetUserId(User);
 
-                var isEnrolled = await _context.Enrollments
-                    .AnyAsync(e =>
-                        e.StudentId == userId &&
-                        e.CourseId == lesson.CourseId);
-
-                if (!isEnrolled)
+                if (userId == null ||
+                    !await _accessControlService.StudentCanViewLessonAsync(userId, lesson.Id))
                 {
                     TempData["Error"] =
                         "You must enroll in this course first.";
