@@ -98,7 +98,17 @@ namespace StudyHub.Areas.Identity.Pages.Account
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, "Student");
+                    var roleResult = await _userManager.AddToRoleAsync(user, "Student");
+
+                    if (!roleResult.Succeeded)
+                    {
+                        foreach (var error in roleResult.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Description);
+                        }
+
+                        return Page();
+                    }
 
                     _logger.LogInformation("User created a new account with password.");
 

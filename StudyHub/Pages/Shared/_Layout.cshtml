@@ -103,6 +103,18 @@
                             </a>
                         </li>
 
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-page="/Admin/CreateTeacher">
+
+                                    Admin
+
+                                </a>
+                            </li>
+                        }
+
                     </ul>
 
                     <partial name="_LoginPartial" />

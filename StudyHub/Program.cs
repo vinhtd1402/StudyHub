@@ -7,6 +7,10 @@ namespace StudyHub
 {
     public class Program
     {
+        private const string AdminRole = "Admin";
+        private const string TeacherRole = "Teacher";
+        private const string StudentRole = "Student";
+
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +30,14 @@ namespace StudyHub
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultUI()
             .AddDefaultTokenProviders();
+
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminOnly", policy => policy.RequireRole(AdminRole));
+                options.AddPolicy("TeacherOnly", policy => policy.RequireRole(TeacherRole));
+                options.AddPolicy("StudentOnly", policy => policy.RequireRole(StudentRole));
+                options.AddPolicy("LearningUser", policy => policy.RequireRole(StudentRole, TeacherRole));
+            });
 
             builder.Services.AddRazorPages();
 
@@ -50,51 +62,89 @@ namespace StudyHub
 
             app.MapRazorPages();
 
-            using (var scope = app.Services.CreateScope())
+            if (app.Environment.IsDevelopment())
             {
-                var services = scope.ServiceProvider;
-
-                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-                var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-
-                string[] roles = { "Admin", "Teacher", "Student" };
-
-                foreach (var role in roles)
-                {
-                    if (!await roleManager.RoleExistsAsync(role))
-                    {
-                        await roleManager.CreateAsync(new IdentityRole(role));
-                    }
-                }
-
-                var email = "vinh@gmail.com";
-                var password = "123456Aa@";
-
-                var user = await userManager.FindByEmailAsync(email);
-
-                if (user == null)
-                {
-                    user = new ApplicationUser
-                    {
-                        UserName = email,
-                        Email = email,
-                        EmailConfirmed = true
-                    };
-
-                    await userManager.CreateAsync(user, password);
-                }
-
-                var currentRoles = await userManager.GetRolesAsync(user);
-
-                if (currentRoles.Any())
-                {
-                    await userManager.RemoveFromRolesAsync(user, currentRoles);
-                }
-
-                await userManager.AddToRoleAsync(user, "Teacher");
+                await SeedDevelopmentIdentityAsync(app.Services);
             }
 
             await app.RunAsync();
+        }
+
+        private static async Task SeedDevelopmentIdentityAsync(IServiceProvider serviceProvider)
+        {
+            using var scope = serviceProvider.CreateScope();
+
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            foreach (var role in new[] { AdminRole, TeacherRole, StudentRole })
+            {
+                if (!await roleManager.RoleExistsAsync(role))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(role));
+                }
+            }
+
+            await EnsureUserInRoleAsync(
+                userManager,
+                email: "admin@studyhub.local",
+                password: "123456Aa@",
+                fullName: "StudyHub Admin",
+                role: AdminRole);
+
+            await EnsureUserInRoleAsync(
+                userManager,
+                email: "vinh@gmail.com",
+                password: "123456Aa@",
+                fullName: "StudyHub Teacher",
+                role: TeacherRole);
+
+            await EnsureUserInRoleAsync(
+                userManager,
+                email: "student@studyhub.local",
+                password: "123456Aa@",
+                fullName: "StudyHub Student",
+                role: StudentRole);
+        }
+
+        private static async Task EnsureUserInRoleAsync(
+            UserManager<ApplicationUser> userManager,
+            string email,
+            string password,
+            string fullName,
+            string role)
+        {
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FullName = fullName,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await userManager.CreateAsync(user, password);
+
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(error => error.Description));
+                    throw new InvalidOperationException($"Could not create development user '{email}': {errors}");
+                }
+            }
+
+            if (!await userManager.IsInRoleAsync(user, role))
+            {
+                var roleResult = await userManager.AddToRoleAsync(user, role);
+
+                if (!roleResult.Succeeded)
+                {
+                    var errors = string.Join(", ", roleResult.Errors.Select(error => error.Description));
+                    throw new InvalidOperationException($"Could not add '{email}' to '{role}' role: {errors}");
+                }
+            }
         }
     }
 }
