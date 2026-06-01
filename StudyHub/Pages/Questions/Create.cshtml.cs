@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using StudyHub.Services;
 
@@ -12,16 +10,13 @@ namespace StudyHub.Pages.Questions
     [Authorize(Roles = "Teacher")]
     public class CreateModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly QuizService _quizService;
 
         public CreateModel(
-            ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             QuizService quizService)
         {
-            _context = context;
             _userManager = userManager;
             _quizService = quizService;
         }
@@ -50,13 +45,7 @@ namespace StudyHub.Pages.Questions
                 return Forbid();
             }
 
-            for (int i = 0; i < Count; i++)
-            {
-                Questions.Add(new Question
-                {
-                    QuizId = QuizId
-                });
-            }
+            Questions = _quizService.BuildQuestionDrafts(QuizId, Count);
 
             return Page();
         }
@@ -83,8 +72,7 @@ namespace StudyHub.Pages.Questions
                 return Forbid();
             }
 
-            _context.Questions.AddRange(Questions);
-            await _context.SaveChangesAsync();
+            await _quizService.AddQuestionsAsync(QuizId, Questions);
 
             return RedirectToPage("/Quizzes/Index");
         }

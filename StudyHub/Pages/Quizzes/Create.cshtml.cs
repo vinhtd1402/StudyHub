@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,18 +10,18 @@ namespace StudyHub.Pages.Quizzes
     [Authorize(Roles = "Teacher")]
     public class CreateModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AccessControlService _accessControlService;
+        private readonly QuizService _quizService;
 
         public CreateModel(
-            ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            AccessControlService accessControlService)
+            AccessControlService accessControlService,
+            QuizService quizService)
         {
-            _context = context;
             _userManager = userManager;
             _accessControlService = accessControlService;
+            _quizService = quizService;
         }
 
         [BindProperty]
@@ -65,8 +64,7 @@ namespace StudyHub.Pages.Quizzes
                 return Forbid();
             }
 
-            _context.Quizzes.Add(Quiz);
-            await _context.SaveChangesAsync();
+            await _quizService.CreateQuizAsync(Quiz);
 
             return RedirectToPage(
                 "/Questions/Create",

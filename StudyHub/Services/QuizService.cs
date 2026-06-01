@@ -61,6 +61,68 @@ namespace StudyHub.Services
                     q.Lesson.Course.TeacherId == teacherId);
         }
 
+        public async Task<IList<Quiz>> GetVisibleQuizzesAsync(
+            string? userId,
+            bool isTeacher,
+            bool isStudent)
+        {
+            var query = _unitOfWork.Quizzes.Query()
+                .Include(q => q.Lesson)
+                .ThenInclude(l => l!.Course)
+                .AsQueryable();
+
+            if (isTeacher)
+            {
+                query = query.Where(q =>
+                    q.Lesson != null &&
+                    q.Lesson.Course != null &&
+                    q.Lesson.Course.TeacherId == userId);
+            }
+            else if (isStudent)
+            {
+                query = query.Where(q =>
+                    q.Lesson != null &&
+                    _unitOfWork.Enrollments.Query().Any(e =>
+                        e.StudentId == userId &&
+                        e.CourseId == q.Lesson.CourseId));
+            }
+
+            return await query
+                .OrderBy(q => q.Lesson != null ? q.Lesson.Title : string.Empty)
+                .ThenBy(q => q.Title)
+                .ToListAsync();
+        }
+
+        public async Task<Quiz> CreateQuizAsync(Quiz quiz)
+        {
+            await _unitOfWork.Quizzes.AddAsync(quiz);
+            await _unitOfWork.SaveChangesAsync();
+
+            return quiz;
+        }
+
+        public List<Question> BuildQuestionDrafts(int quizId, int count)
+        {
+            return Enumerable.Range(0, count)
+                .Select(_ => new Question { QuizId = quizId })
+                .ToList();
+        }
+
+        public async Task AddQuestionsAsync(int quizId, IList<Question> questions)
+        {
+            if (questions.Any(q => q.QuizId != quizId))
+            {
+                throw new InvalidOperationException("All questions must belong to the selected quiz.");
+            }
+
+            foreach (var question in questions)
+            {
+                await _unitOfWork.Questions.AddAsync(question);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         public async Task<QuizAttempt> SubmitAttemptAsync(
             int quizId,
             string userId,

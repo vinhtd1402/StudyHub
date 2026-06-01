@@ -1,29 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using StudyHub.Services;
+
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
     public class EditModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly CourseService _courseService;
 
         public EditModel(
-            StudyHub.Data.ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            CourseService courseService)
         {
-            _context = context;
             _userManager = userManager;
+            _courseService = courseService;
         }
 
         [BindProperty]
@@ -36,12 +31,6 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
-            var course =  await _context.Courses.FirstOrDefaultAsync(m => m.Id == id);
-            if (course == null)
-            {
-                return NotFound();
-            }
-
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
@@ -49,9 +38,15 @@ namespace StudyHub.Pages_Courses
                 return Challenge();
             }
 
-            if (user.IsTeacherSuspended || course.TeacherId != user.Id)
+            if (user.IsTeacherSuspended)
             {
                 return Forbid();
+            }
+
+            var course = await _courseService.GetTeacherCourseAsync(id.Value, user.Id);
+            if (course == null)
+            {
+                return NotFound();
             }
 
             Course = course;
@@ -74,44 +69,23 @@ namespace StudyHub.Pages_Courses
                 return Challenge();
             }
 
-            var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == Course.Id);
-
-            if (course == null)
-            {
-                return NotFound();
-            }
-
-            if (user.IsTeacherSuspended || course.TeacherId != user.Id)
+            if (user.IsTeacherSuspended)
             {
                 return Forbid();
             }
 
-            course.Title = Course.Title;
-            course.Description = Course.Description;
-            course.Price = Course.Price;
-
-            try
+            var result = await _courseService.UpdateCourseAsync(Course, user.Id);
+            if (result == null)
             {
-                await _context.SaveChangesAsync();
+                return NotFound();
             }
-            catch (DbUpdateConcurrencyException)
+
+            if (result == false)
             {
-                if (!CourseExists(Course.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return Forbid();
             }
 
             return RedirectToPage("./Index");
-        }
-
-        private bool CourseExists(int id)
-        {
-            return _context.Courses.Any(e => e.Id == id);
         }
     }
 }

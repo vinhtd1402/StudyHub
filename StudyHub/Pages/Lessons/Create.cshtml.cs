@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using StudyHub.Services;
 
 namespace StudyHub.Pages_Lessons
@@ -17,18 +10,18 @@ namespace StudyHub.Pages_Lessons
     [Authorize(Roles = "Teacher")]
     public class CreateModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AccessControlService _accessControlService;
+        private readonly LessonService _lessonService;
 
         public CreateModel(
-            StudyHub.Data.ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            AccessControlService accessControlService)
+            AccessControlService accessControlService,
+            LessonService lessonService)
         {
-            _context = context;
             _userManager = userManager;
             _accessControlService = accessControlService;
+            _lessonService = lessonService;
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -45,7 +38,7 @@ namespace StudyHub.Pages_Lessons
                 return Forbid();
             }
 
-            await LoadCourseOptionsAsync(user.Id);
+            await LoadCourseOptionsAsync(user.Id, null);
             return Page();
         }
 
@@ -60,7 +53,7 @@ namespace StudyHub.Pages_Lessons
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser != null)
                 {
-                    await LoadCourseOptionsAsync(currentUser.Id);
+                    await LoadCourseOptionsAsync(currentUser.Id, Lesson.CourseId);
                 }
 
                 return Page();
@@ -83,20 +76,18 @@ namespace StudyHub.Pages_Lessons
                 return Forbid();
             }
 
-            _context.Lessons.Add(Lesson);
-            await _context.SaveChangesAsync();
+            await _lessonService.CreateLessonAsync(Lesson);
 
             return RedirectToPage("./Index");
         }
 
-        private async Task LoadCourseOptionsAsync(string teacherId)
+        private async Task LoadCourseOptionsAsync(string teacherId, int? selectedCourseId)
         {
-            var courses = await _context.Courses
-                .Where(c => c.TeacherId == teacherId)
-                .OrderBy(c => c.Title)
-                .ToListAsync();
-
-            ViewData["CourseId"] = new SelectList(courses, "Id", "Title");
+            ViewData["CourseId"] = await _lessonService.BuildCourseOptionsAsync(
+                teacherId,
+                isAdmin: false,
+                isTeacher: true,
+                selectedCourseId);
         }
     }
 }

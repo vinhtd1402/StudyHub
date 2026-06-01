@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
+using StudyHub.Services;
 
 namespace StudyHub.Pages
 {
     public class IndexModel : PageModel
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CourseService _courseService;
 
-        public IndexModel(ApplicationDbContext context)
+        public IndexModel(CourseService courseService)
         {
-            _context = context;
+            _courseService = courseService;
         }
 
         public IList<Course> PopularCourses { get; set; }
@@ -19,12 +18,7 @@ namespace StudyHub.Pages
 
         public async Task OnGetAsync()
         {
-            PopularCourses = await _context.Courses
-                .Include(c => c.Teacher)
-                .Include(c => c.Enrollments)
-                .OrderByDescending(c => c.Enrollments.Count)
-                .Take(6)
-                .ToListAsync();
+            PopularCourses = await _courseService.GetPopularCoursesAsync();
         }
     }
 }

@@ -1,32 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using StudyHub.Services;
+
 namespace StudyHub.Pages_Lessons
 {
     [Authorize(Roles = "Teacher")]
     public class DeleteModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly AccessControlService _accessControlService;
+        private readonly LessonService _lessonService;
 
         public DeleteModel(
-            StudyHub.Data.ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            AccessControlService accessControlService)
+            LessonService lessonService)
         {
-            _context = context;
             _userManager = userManager;
-            _accessControlService = accessControlService;
+            _lessonService = lessonService;
         }
 
         [BindProperty]
@@ -46,23 +38,14 @@ namespace StudyHub.Pages_Lessons
                 return Challenge();
             }
 
-            var lesson = await _context.Lessons
-                .Include(l => l.Course)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (lesson is not null)
+            var lesson = await _lessonService.GetTeacherLessonAsync(id.Value, user.Id);
+            if (lesson == null)
             {
-                if (!await _accessControlService.TeacherOwnsLessonAsync(user.Id, lesson.Id))
-                {
-                    return Forbid();
-                }
-
-                Lesson = lesson;
-
-                return Page();
+                return NotFound();
             }
 
-            return NotFound();
+            Lesson = lesson;
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync(int? id)
@@ -79,19 +62,15 @@ namespace StudyHub.Pages_Lessons
                 return Challenge();
             }
 
-            var lesson = await _context.Lessons
-                .Include(l => l.Course)
-                .FirstOrDefaultAsync(l => l.Id == id);
-            if (lesson != null)
+            var result = await _lessonService.DeleteLessonAsync(id.Value, user.Id);
+            if (result == null)
             {
-                if (!await _accessControlService.TeacherOwnsLessonAsync(user.Id, lesson.Id))
-                {
-                    return Forbid();
-                }
+                return NotFound();
+            }
 
-                Lesson = lesson;
-                _context.Lessons.Remove(Lesson);
-                await _context.SaveChangesAsync();
+            if (result == false)
+            {
+                return Forbid();
             }
 
             return RedirectToPage("./Index");

@@ -1,57 +1,43 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
-using StudyHub.Models;
 using Microsoft.AspNetCore.Identity;
 using StudyHub.Models;
 using System.Security.Claims;
+using StudyHub.Services;
+
 namespace StudyHub.Pages_Courses
 {
     public class DetailsModel : PageModel
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly CourseService _courseService;
+
         public IList<ApplicationUser> EnrolledStudents { get; set; } = new List<ApplicationUser>();
         public bool IsEnrolled { get; set; }
         public string? StatusMessage { get; set; }
-        public Course Course { get; set; }
+        public Course Course { get; set; } = default!;
 
         public DetailsModel(
-    ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            CourseService courseService)
         {
-            _context = context;
             _userManager = userManager;
+            _courseService = courseService;
         }
 
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            Course = await _context.Courses
-                .Include(c => c.Teacher) 
-                .Include(c => c.Lessons)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (Course == null)
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var details = await _courseService.GetCourseDetailsAsync(id, userId);
+            if (details == null)
             {
                 return NotFound();
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            IsEnrolled = await _context.Enrollments
-                .AnyAsync(e => e.CourseId == id && e.StudentId == userId);
-
-            EnrolledStudents = await _context.Enrollments
-    .Where(e => e.CourseId == id && e.Student != null)
-    .Include(e => e.Student)
-    .Select(e => e.Student!)
-    .ToListAsync();
+            Course = details.Course;
+            IsEnrolled = details.IsEnrolled;
+            EnrolledStudents = details.EnrolledStudents;
 
             return Page();
         }
@@ -69,53 +55,17 @@ namespace StudyHub.Pages_Courses
 
             if (user == null) return Challenge();
 
-            var course = await _context.Courses
-                .FirstOrDefaultAsync(c => c.Id == id.Value);
-
-            if (course == null)
+            var result = await _courseService.EnrollAsync(id.Value, user);
+            if (result == CourseEnrollmentResult.CourseNotFound)
             {
                 return NotFound();
             }
 
-            var exists = await _context.Enrollments
-                .AnyAsync(e => e.CourseId == id && e.StudentId == user.Id);
-
-            if (!exists)
+            if (result == CourseEnrollmentResult.InsufficientBalance)
             {
-                if (user.WalletBalance < course.Price)
-                {
-                    StatusMessage = "Your StudyHub wallet does not have enough balance to enroll in this course.";
-                    await OnGetAsync(id.Value);
-                    return Page();
-                }
-
-                if (course.Price > 0)
-                {
-                    user.WalletBalance -= course.Price;
-
-                    _context.CreditTransactions.Add(new CreditTransaction
-                    {
-                        UserId = user.Id,
-                        Amount = -course.Price,
-                        OrderId = $"ENR{Guid.NewGuid():N}",
-                        RequestId = $"ENR-{Guid.NewGuid():N}",
-                        Provider = "StudyHub",
-                        Status = CreditTransactionStatus.Paid,
-                        Message = $"Enrollment fee for course #{course.Id}: {course.Title}",
-                        PaidAt = DateTime.UtcNow
-                    });
-                }
-
-                var enrollment = new Enrollment
-                {
-                    CourseId = id.Value,
-                    StudentId = user.Id,
-                    PricePaid = course.Price,
-                    EnrolledAt = DateTime.UtcNow
-                };
-
-                _context.Enrollments.Add(enrollment);
-                await _context.SaveChangesAsync();
+                StatusMessage = "Your StudyHub wallet does not have enough balance to enroll in this course.";
+                await OnGetAsync(id.Value);
+                return Page();
             }
 
             return RedirectToPage(new { id });
@@ -131,14 +81,7 @@ namespace StudyHub.Pages_Courses
 
             if (user == null) return Challenge();
 
-            var enrollment = await _context.Enrollments
-                .FirstOrDefaultAsync(e => e.CourseId == id && e.StudentId == user.Id);
-
-            if (enrollment != null)
-            {
-                _context.Enrollments.Remove(enrollment);
-                await _context.SaveChangesAsync();
-            }
+            await _courseService.UnenrollAsync(id, user.Id);
 
             return RedirectToPage(new { id });
         }

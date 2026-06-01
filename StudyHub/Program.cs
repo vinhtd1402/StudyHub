@@ -50,6 +50,8 @@ namespace StudyHub
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddSingleton<VietQrPaymentService>();
             builder.Services.AddScoped<AccessControlService>();
+            builder.Services.AddScoped<CourseService>();
+            builder.Services.AddScoped<LessonService>();
             builder.Services.AddScoped<WalletService>();
             builder.Services.AddScoped<QuizService>();
             builder.Services.AddScoped<StudyHubEmailSender>();
