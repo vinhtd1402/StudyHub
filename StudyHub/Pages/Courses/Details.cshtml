@@ -13,7 +13,7 @@
         <p class="card-text">@Model.Course.Description</p>
 
         <p class="mb-1">
-            <strong>Teacher:</strong> @Model.Course.Teacher.Email
+            <strong>Teacher:</strong> @(Model.Course.Teacher?.FullName ?? Model.Course.Teacher?.Email ?? "Unknown teacher")
         </p>
 
         <p class="mb-0">
@@ -116,7 +116,7 @@ else
     <hr />
     <h4>Enrolled Students</h4>
 
-    <p>Total: @Model.EnrolledStudents.Count</p> <!-- debug -->
+    <p>Total: @Model.EnrolledStudents.Count</p>
     @if (!Model.EnrolledStudents.Any())
     {
         <div class="alert alert-info">

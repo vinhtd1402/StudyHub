@@ -7,7 +7,6 @@ using StudyHub.Services;
 
 namespace StudyHub.Pages_Courses
 {
-    [Authorize]
     public class IndexModel : PageModel
     {
         private readonly CourseService _courseService;

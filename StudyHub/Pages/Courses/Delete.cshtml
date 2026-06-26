@@ -28,7 +28,7 @@
             @Html.DisplayNameFor(model => model.Course.Teacher)
         </dt>
         <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Course.Teacher.Id)
+            @(Model.Course.Teacher?.FullName ?? Model.Course.Teacher?.Email ?? "Unknown teacher")
         </dd>
     </dl>
     

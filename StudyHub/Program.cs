@@ -154,6 +154,39 @@ namespace StudyHub
                     throw new InvalidOperationException($"Could not create development user '{email}': {errors}");
                 }
             }
+            else
+            {
+                var userChanged = false;
+
+                if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    userChanged = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(user.FullName))
+                {
+                    user.FullName = fullName;
+                    userChanged = true;
+                }
+
+                if (!await userManager.CheckPasswordAsync(user, password))
+                {
+                    var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+                    var resetResult = await userManager.ResetPasswordAsync(user, resetToken, password);
+
+                    if (!resetResult.Succeeded)
+                    {
+                        var errors = string.Join(", ", resetResult.Errors.Select(error => error.Description));
+                        throw new InvalidOperationException($"Could not reset development password for '{email}': {errors}");
+                    }
+                }
+
+                if (userChanged)
+                {
+                    await userManager.UpdateAsync(user);
+                }
+            }
 
             if (!await userManager.IsInRoleAsync(user, role))
             {
