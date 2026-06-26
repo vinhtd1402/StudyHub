@@ -1,24 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using StudyHub.Services;
+
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
     public class EditModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly CourseService _courseService;
 
-        public EditModel(StudyHub.Data.ApplicationDbContext context)
+        public EditModel(
+            UserManager<ApplicationUser> userManager,
+            CourseService courseService)
         {
-            _context = context;
+            _userManager = userManager;
+            _courseService = courseService;
         }
 
         [BindProperty]
@@ -31,13 +31,25 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
-            var course =  await _context.Courses.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (user.IsTeacherSuspended)
+            {
+                return Forbid();
+            }
+
+            var course = await _courseService.GetTeacherCourseAsync(id.Value, user.Id);
             if (course == null)
             {
                 return NotFound();
             }
+
             Course = course;
-           ViewData["TeacherId"] = new SelectList(_context.Users, "Id", "Id");
             return Page();
         }
 
@@ -50,30 +62,30 @@ namespace StudyHub.Pages_Courses
                 return Page();
             }
 
-            _context.Attach(Course).State = EntityState.Modified;
+            var user = await _userManager.GetUserAsync(User);
 
-            try
+            if (user == null)
             {
-                await _context.SaveChangesAsync();
+                return Challenge();
             }
-            catch (DbUpdateConcurrencyException)
+
+            if (user.IsTeacherSuspended)
             {
-                if (!CourseExists(Course.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return Forbid();
+            }
+
+            var result = await _courseService.UpdateCourseAsync(Course, user.Id);
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            if (result == false)
+            {
+                return Forbid();
             }
 
             return RedirectToPage("./Index");
-        }
-
-        private bool CourseExists(int id)
-        {
-            return _context.Courses.Any(e => e.Id == id);
         }
     }
 }

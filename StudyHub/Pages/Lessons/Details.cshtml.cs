@@ -1,33 +1,29 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using StudyHub.Services;
 
 namespace StudyHub.Pages_Lessons
 {
     public class DetailsModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        public string? EmbedYoutubeUrl { get; set; }
         public Lesson? PreviousLesson { get; set; }
         public Lesson? NextLesson { get; set; }
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly LessonService _lessonService;
 
         public DetailsModel(
-    ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            LessonService lessonService)
         {
-            _context = context;
             _userManager = userManager;
+            _lessonService = lessonService;
         }
 
         public Lesson Lesson { get; set; } = default!;
-
+        public List<QuizResultViewModel> QuizResults { get; set; } = new();
         public async Task<IActionResult> OnGetAsync(int? id)
         {
             if (id == null)
@@ -35,28 +31,37 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            var lesson = await _context.Lessons
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var userId = _userManager.GetUserId(User);
+            var (result, data) = await _lessonService.GetLessonDetailsAsync(
+                id.Value,
+                userId,
+                User.IsInRole("Admin"),
+                User.IsInRole("Teacher"));
 
-            if (lesson == null)
+            if (result == LessonAccessResult.NotFound)
             {
                 return NotFound();
             }
 
-            Lesson = lesson;
+            if (result == LessonAccessResult.Forbidden)
+            {
+                return Forbid();
+            }
 
-            PreviousLesson = await _context.Lessons
-                .Where(l => l.CourseId == lesson.CourseId && l.Id < lesson.Id)
-                .OrderByDescending(l => l.Id)
-                .FirstOrDefaultAsync();
+            if (result == LessonAccessResult.EnrollmentRequired)
+            {
+                TempData["Error"] = "You must enroll in this course first.";
+                return RedirectToPage("/Courses/Details", new { id = data?.Lesson.CourseId ?? 0 });
+            }
 
-            NextLesson = await _context.Lessons
-                .Where(l => l.CourseId == lesson.CourseId && l.Id > lesson.Id)
-                .OrderBy(l => l.Id)
-                .FirstOrDefaultAsync();
+            Lesson = data!.Lesson;
+            PreviousLesson = data.PreviousLesson;
+            NextLesson = data.NextLesson;
+            QuizResults = data.QuizResults;
 
             return Page();
         }
+
         public async Task<IActionResult> OnPostCompleteAsync(int? id)
         {
             if (id == null) return NotFound();
@@ -64,20 +69,10 @@ namespace StudyHub.Pages_Lessons
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
-            var exists = await _context.LessonProgresses
-                .AnyAsync(lp => lp.LessonId == id && lp.StudentId == user.Id);
-
-            if (!exists)
+            var completed = await _lessonService.MarkCompletedAsync(id.Value, user.Id);
+            if (!completed)
             {
-                _context.LessonProgresses.Add(new LessonProgress
-                {
-                    LessonId = id.Value,
-                    StudentId = user.Id,
-                    IsCompleted = true,
-                    CompletedAt = DateTime.UtcNow
-                });
-
-                await _context.SaveChangesAsync();
+                return Forbid();
             }
 
             return RedirectToPage(new { id });

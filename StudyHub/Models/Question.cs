@@ -1,12 +1,31 @@
-﻿public class Question
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace StudyHub.Models
 {
-    public int Id { get; set; }
+    public class Question
+    {
+        public int Id { get; set; }
 
-    public string Content { get; set; } = string.Empty;
+        [Required]
+        public string Content { get; set; } = string.Empty;
 
-    public int QuizId { get; set; }
+        [Required]
+        public string OptionA { get; set; } = string.Empty;
 
-    public Quiz Quiz { get; set; } = null!;
+        [Required]
+        public string OptionB { get; set; } = string.Empty;
 
-    public ICollection<Answer> Answers { get; set; } = new List<Answer>();
+        [Required]
+        public string OptionC { get; set; } = string.Empty;
+
+        [Required]
+        public string OptionD { get; set; } = string.Empty;
+
+        [Required]
+        public string CorrectAnswer { get; set; } = "A";
+
+        public int QuizId { get; set; }
+
+        public Quiz? Quiz { get; set; }
+    }
 }

@@ -5,10 +5,10 @@
         public int Id { get; set; }
 
         public int LessonId { get; set; }
-        public Lesson Lesson { get; set; }
+        public Lesson Lesson { get; set; } = default!;
 
-        public string StudentId { get; set; }
-        public ApplicationUser Student { get; set; }
+        public string StudentId { get; set; } = string.Empty;
+        public ApplicationUser Student { get; set; } = default!;
 
         public bool IsCompleted { get; set; }
 

@@ -1,75 +1,87 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
-using StudyHub.Models;
 using Microsoft.AspNetCore.Identity;
 using StudyHub.Models;
+using System.Security.Claims;
+using StudyHub.Services;
+
 namespace StudyHub.Pages_Courses
 {
     public class DetailsModel : PageModel
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly CourseService _courseService;
 
-        public DetailsModel(
-    ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager)
-        {
-            _context = context;
-            _userManager = userManager;
-        }
-
+        public IList<ApplicationUser> EnrolledStudents { get; set; } = new List<ApplicationUser>();
+        public bool IsEnrolled { get; set; }
+        public string? StatusMessage { get; set; }
         public Course Course { get; set; } = default!;
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public DetailsModel(
+            UserManager<ApplicationUser> userManager,
+            CourseService courseService)
         {
-            if (id == null)
+            _userManager = userManager;
+            _courseService = courseService;
+        }
+
+
+        public async Task<IActionResult> OnGetAsync(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var details = await _courseService.GetCourseDetailsAsync(id, userId);
+            if (details == null)
             {
                 return NotFound();
             }
 
-            var course = await _context.Courses
-    .Include(c => c.Lessons)
-    .FirstOrDefaultAsync(m => m.Id == id);
+            Course = details.Course;
+            IsEnrolled = details.IsEnrolled;
+            EnrolledStudents = details.EnrolledStudents;
 
-            if (course is not null)
-            {
-                Course = course;
-
-                return Page();
-            }
-
-            return NotFound();
+            return Page();
         }
-        
+
         public async Task<IActionResult> OnPostEnrollAsync(int? id)
         {
+            if (!User.IsInRole("Student")) // 🔥 THÊM
+            {
+                return Forbid();
+            }
+
             if (id == null) return NotFound();
 
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null) return Challenge();
 
-            var exists = await _context.Enrollments
-                .AnyAsync(e => e.CourseId == id && e.StudentId == user.Id);
-
-            if (!exists)
+            var result = await _courseService.EnrollAsync(id.Value, user);
+            if (result == CourseEnrollmentResult.CourseNotFound)
             {
-                var enrollment = new Enrollment
-                {
-                    CourseId = id.Value,
-                    StudentId = user.Id,
-                    EnrolledAt = DateTime.UtcNow
-                };
-
-                _context.Enrollments.Add(enrollment);
-                await _context.SaveChangesAsync();
+                return NotFound();
             }
+
+            if (result == CourseEnrollmentResult.InsufficientBalance)
+            {
+                StatusMessage = "Your StudyHub wallet does not have enough balance to enroll in this course.";
+                await OnGetAsync(id.Value);
+                return Page();
+            }
+
+            return RedirectToPage(new { id });
+        }
+        public async Task<IActionResult> OnPostUnenrollAsync(int id)
+        {
+            if (!User.IsInRole("Student")) // 🔥 THÊM
+            {
+                return Forbid();
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null) return Challenge();
+
+            await _courseService.UnenrollAsync(id, user.Id);
 
             return RedirectToPage(new { id });
         }

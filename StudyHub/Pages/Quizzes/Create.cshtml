@@ -1,19 +1,60 @@
 ﻿@page
 @model StudyHub.Pages.Quizzes.CreateModel
-<form method="post">
 
-    <div class="mb-3">
-        <label>Quiz Title</label>
-        <input asp-for="Quiz.Title" class="form-control" />
-    </div>
+<div class="container mt-4">
 
-    <div class="mb-3">
-        <label>Lesson Id</label>
-        <input asp-for="Quiz.LessonId" class="form-control" />
-    </div>
+    <h2>Create Quiz</h2>
 
-    <button type="submit" class="btn btn-primary">
-        Create Quiz
-    </button>
+    <form method="post">
 
-</form>
+        <input type="hidden"
+               asp-for="Quiz.LessonId" />
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Quiz Title
+            </label>
+
+            <input asp-for="Quiz.Title"
+                   class="form-control" />
+
+        </div>
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Passing Score (%)
+            </label>
+
+            <input asp-for="Quiz.PassingScorePercent"
+                   type="number"
+                   min="0"
+                   max="100"
+                   class="form-control" />
+
+        </div>
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Number Of Questions
+            </label>
+
+            <input asp-for="Quiz.QuestionCount"
+                   type="number"
+                   min="1"
+                   class="form-control" />
+
+        </div>
+
+        <button type="submit"
+                class="btn btn-primary">
+
+            Next
+
+        </button>
+
+    </form>
+
+</div>

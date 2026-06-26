@@ -1,23 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using StudyHub.Services;
+
 namespace StudyHub.Pages_Lessons
 {
     [Authorize(Roles = "Teacher")]
     public class DeleteModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly LessonService _lessonService;
 
-        public DeleteModel(StudyHub.Data.ApplicationDbContext context)
+        public DeleteModel(
+            UserManager<ApplicationUser> userManager,
+            LessonService lessonService)
         {
-            _context = context;
+            _userManager = userManager;
+            _lessonService = lessonService;
         }
 
         [BindProperty]
@@ -30,16 +31,21 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            var lesson = await _context.Lessons.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _userManager.GetUserAsync(User);
 
-            if (lesson is not null)
+            if (user == null)
             {
-                Lesson = lesson;
-
-                return Page();
+                return Challenge();
             }
 
-            return NotFound();
+            var lesson = await _lessonService.GetTeacherLessonAsync(id.Value, user.Id);
+            if (lesson == null)
+            {
+                return NotFound();
+            }
+
+            Lesson = lesson;
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync(int? id)
@@ -49,12 +55,22 @@ namespace StudyHub.Pages_Lessons
                 return NotFound();
             }
 
-            var lesson = await _context.Lessons.FindAsync(id);
-            if (lesson != null)
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
             {
-                Lesson = lesson;
-                _context.Lessons.Remove(Lesson);
-                await _context.SaveChangesAsync();
+                return Challenge();
+            }
+
+            var result = await _lessonService.DeleteLessonAsync(id.Value, user.Id);
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            if (result == false)
+            {
+                return Forbid();
             }
 
             return RedirectToPage("./Index");

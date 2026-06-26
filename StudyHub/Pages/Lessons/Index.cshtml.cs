@@ -1,30 +1,52 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using StudyHub.Models;
+using StudyHub.Services;
 
 namespace StudyHub.Pages_Lessons
 {
     public class IndexModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly LessonService _lessonService;
 
-        public IndexModel(StudyHub.Data.ApplicationDbContext context)
+        public IndexModel(
+            UserManager<ApplicationUser> userManager,
+            LessonService lessonService)
         {
-            _context = context;
+            _userManager = userManager;
+            _lessonService = lessonService;
         }
 
-        public IList<Lesson> Lesson { get;set; } = default!;
+        public IList<Lesson> Lessons { get; set; } = default!;
+        public SelectList CourseOptions { get; set; } = default!;
+
+        [BindProperty(SupportsGet = true)]
+        public string? SearchTerm { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? CourseId { get; set; }
 
         public async Task OnGetAsync()
         {
-            Lesson = await _context.Lessons
-                .Include(l => l.Course).ToListAsync();
+            var userId = _userManager.GetUserId(User);
+            var isAdmin = User.IsInRole("Admin");
+            var isTeacher = User.IsInRole("Teacher");
+
+            Lessons = await _lessonService.GetLessonsAsync(
+                userId,
+                isAdmin,
+                isTeacher,
+                SearchTerm,
+                CourseId);
+
+            CourseOptions = await _lessonService.BuildCourseOptionsAsync(
+                userId,
+                isAdmin,
+                isTeacher,
+                CourseId);
         }
     }
 }

@@ -1,23 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using StudyHub.Data;
 using StudyHub.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using StudyHub.Services;
+
 namespace StudyHub.Pages_Courses
 {
     [Authorize(Roles = "Teacher")]
     public class DeleteModel : PageModel
     {
-        private readonly StudyHub.Data.ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly CourseService _courseService;
 
-        public DeleteModel(StudyHub.Data.ApplicationDbContext context)
+        public DeleteModel(
+            UserManager<ApplicationUser> userManager,
+            CourseService courseService)
         {
-            _context = context;
+            _userManager = userManager;
+            _courseService = courseService;
         }
 
         [BindProperty]
@@ -30,16 +31,21 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
-            var course = await _context.Courses.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _userManager.GetUserAsync(User);
 
-            if (course is not null)
+            if (user == null)
             {
-                Course = course;
-
-                return Page();
+                return Challenge();
             }
 
-            return NotFound();
+            var course = await _courseService.GetTeacherCourseAsync(id.Value, user.Id);
+            if (course == null)
+            {
+                return NotFound();
+            }
+
+            Course = course;
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync(int? id)
@@ -49,12 +55,22 @@ namespace StudyHub.Pages_Courses
                 return NotFound();
             }
 
-            var course = await _context.Courses.FindAsync(id);
-            if (course != null)
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
             {
-                Course = course;
-                _context.Courses.Remove(Course);
-                await _context.SaveChangesAsync();
+                return Challenge();
+            }
+
+            var result = await _courseService.DeleteCourseAsync(id.Value, user.Id);
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            if (result == false)
+            {
+                return Forbid();
             }
 
             return RedirectToPage("./Index");

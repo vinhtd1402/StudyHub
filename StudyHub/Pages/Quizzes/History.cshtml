@@ -1,0 +1,59 @@
+@page
+@model StudyHub.Pages.Quizzes.HistoryModel
+
+@{
+    ViewData["Title"] = "Quiz History";
+}
+
+<div class="container mt-4">
+
+    <h1 class="h3 fw-bold mb-4">Quiz History</h1>
+
+    @if (!Model.History.Any())
+    {
+        <div class="alert alert-info">
+            You have not taken any quizzes yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Lesson</th>
+                        <th>Score</th>
+                        <th>Result</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.History)
+                    {
+                        <tr>
+                            <td>@item.Quiz.Title</td>
+                            <td>@item.Quiz.Lesson?.Title</td>
+                            <td>@item.Score / @item.TotalQuestions (@item.Percentage.ToString("N2")%)</td>
+                            <td>
+                                <span class="badge @(item.IsPassed ? "bg-success" : "bg-danger")">
+                                    @(item.IsPassed ? "Passed" : "Failed")
+                                </span>
+                            </td>
+                            <td>@item.TakenAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <a asp-page="/Quizzes/Review"
+                                   asp-route-attemptId="@item.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Review
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>
